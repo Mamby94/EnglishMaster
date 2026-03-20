@@ -41,6 +41,28 @@ const db   = firebase.firestore();
 // Persist login across sessions (stays logged in on all devices)
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
+// Validate Firebase API key works — detect invalid key early
+(function checkFirebaseApiKey(){
+  var url = 'https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig?key=' + firebaseConfig.apiKey;
+  fetch(url).then(function(r){
+    if(!r.ok){
+      r.json().then(function(d){
+        if(d.error && d.error.message && d.error.message.indexOf('API key not valid')!==-1){
+          console.error('Firebase API key is invalid:', d.error.message);
+          var msgEl = document.getElementById('login-msg');
+          if(msgEl){
+            msgEl.innerHTML = '<span style="color:#c0251a">⚠️ Clé API Firebase invalide. Contactez l\'administrateur du site.</span>';
+          }
+          var regMsgEl = document.getElementById('reg-msg');
+          if(regMsgEl){
+            regMsgEl.innerHTML = '<span style="color:#c0251a">⚠️ Clé API Firebase invalide. Contactez l\'administrateur du site.</span>';
+          }
+        }
+      }).catch(function(){});
+    }
+  }).catch(function(){});
+})();
+
 let currentUser = null;
 let userProfile = {};
 let userState   = {done:{}, xp:0, streak:0, lastDate:''};
@@ -72,7 +94,10 @@ function doLogin(){
       var msg = e.code==='auth/user-not-found'||e.code==='auth/wrong-password'||e.code==='auth/invalid-credential' ? 'Email ou mot de passe incorrect.' :
                 e.code==='auth/invalid-email' ? 'Email invalide.' :
                 e.code==='auth/too-many-requests' ? 'Trop de tentatives. Réessayez plus tard.' :
-                e.code==='auth/network-request-failed' ? 'Erreur réseau. Vérifiez votre connexion.' : 'Erreur : '+e.message;
+                e.code==='auth/network-request-failed' ? 'Erreur réseau. Vérifiez votre connexion.' :
+                e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Clé API Firebase invalide. Contactez l\'administrateur.' :
+                (e.message && e.message.indexOf('API key not valid')!==-1) ? 'Clé API Firebase invalide. Contactez l\'administrateur.' :
+                'Erreur : '+e.message;
       setMsg('login-msg', msg, false);
     });
 }
@@ -97,7 +122,10 @@ function doRegister(){
                 e.code==='auth/invalid-email' ? 'Email invalide.' :
                 e.code==='auth/weak-password' ? 'Mot de passe trop faible (6 caractères min).' :
                 e.code==='auth/too-many-requests' ? 'Trop de tentatives. Réessayez plus tard.' :
-                e.code==='auth/network-request-failed' ? 'Erreur réseau. Vérifiez votre connexion.' : 'Erreur : '+e.message;
+                e.code==='auth/network-request-failed' ? 'Erreur réseau. Vérifiez votre connexion.' :
+                e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Clé API Firebase invalide. Contactez l\'administrateur.' :
+                (e.message && e.message.indexOf('API key not valid')!==-1) ? 'Clé API Firebase invalide. Contactez l\'administrateur.' :
+                'Erreur : '+e.message;
       setMsg('reg-msg', msg, false);
     });
 }
