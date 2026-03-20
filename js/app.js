@@ -49,16 +49,28 @@ var _firebaseKeyInvalid = false;
     if(!r.ok){
       r.json().then(function(d){
         var errMsg = (d.error && d.error.message) ? d.error.message : '';
-        if(errMsg.indexOf('API key not valid')!==-1 || errMsg.indexOf('blocked')!==-1 || errMsg.indexOf('PERMISSION_DENIED')!==-1 || errMsg.indexOf('Identity Toolkit')!==-1){
+        var errStr = JSON.stringify(d.error || {});
+        if(errMsg.indexOf('API key not valid')!==-1 || errMsg.indexOf('blocked')!==-1 || errMsg.indexOf('PERMISSION_DENIED')!==-1 || errMsg.indexOf('Identity Toolkit')!==-1 || errStr.indexOf('API_KEY_SERVICE_BLOCKED')!==-1){
           console.error('Firebase API key issue:', errMsg);
           _firebaseKeyInvalid = true;
-          var isBlocked = errMsg.indexOf('blocked')!==-1 || errMsg.indexOf('PERMISSION_DENIED')!==-1;
+          var isBlocked = errMsg.indexOf('blocked')!==-1 || errMsg.indexOf('PERMISSION_DENIED')!==-1 || errStr.indexOf('API_KEY_SERVICE_BLOCKED')!==-1;
           var title = isBlocked ? 'Authentification bloquée' : 'Clé API Firebase invalide';
           var detail = isBlocked
-            ? 'L\'API Identity Toolkit n\'est pas activée pour cette clé API. Allez dans Google Cloud Console &gt; APIs &amp; Services &gt; Credentials, sélectionnez la clé API, et ajoutez <b>Identity Toolkit API</b> à la liste des APIs autorisées.'
+            ? '<b>La clé API n\'a pas la permission d\'utiliser Identity Toolkit.</b><br><br>' +
+              '<div style="text-align:left;font-size:11px;line-height:1.6">' +
+              'Attention : activer l\'API dans la bibliothèque ne suffit PAS.<br>' +
+              'Il faut aussi l\'ajouter aux <b>restrictions de la clé API</b> :<br><br>' +
+              '1. <b>Google Cloud Console</b> &gt; APIs &amp; Services &gt; <b>Credentials</b><br>' +
+              '2. Cliquer sur la clé API (celle qui commence par AIzaSy...)<br>' +
+              '3. Section <b>\"Restrictions relatives aux API\"</b> (API restrictions)<br>' +
+              '4. Si \"Restrict key\" est sélectionné, cliquer <b>\"Restrict key\"</b><br>' +
+              '5. Dans la liste, cocher <b>\"Identity Toolkit API\"</b><br>' +
+              '6. Cliquer <b>Enregistrer</b><br><br>' +
+              'Si la liste n\'affiche pas Identity Toolkit, sélectionnez d\'abord <b>\"Don\'t restrict key\"</b>, enregistrez, puis testez à nouveau.' +
+              '</div>'
             : 'La connexion au serveur est impossible. Veuillez contacter l\'administrateur du site pour mettre à jour la clé API dans les paramètres Firebase.';
-          var errHtml = '<div style="background:#fdecea;border:1.5px solid #c0251a;border-radius:8px;padding:12px 14px;margin-bottom:12px;text-align:center">' +
-            '<div style="font-size:14px;font-weight:700;color:#c0251a;margin-bottom:4px">' + title + '</div>' +
+          var errHtml = '<div style="background:#fdecea;border:1.5px solid #c0251a;border-radius:8px;padding:14px 16px;margin-bottom:12px;text-align:center">' +
+            '<div style="font-size:14px;font-weight:700;color:#c0251a;margin-bottom:8px">' + title + '</div>' +
             '<div style="font-size:12px;color:#5a5448">' + detail + '</div>' +
             '</div>';
           var msgEl = document.getElementById('login-msg');
