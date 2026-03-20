@@ -42,6 +42,7 @@ const db   = firebase.firestore();
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
 // Validate Firebase API key works — detect invalid key early
+var _firebaseKeyInvalid = false;
 (function checkFirebaseApiKey(){
   var url = 'https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig?key=' + firebaseConfig.apiKey;
   fetch(url).then(function(r){
@@ -49,14 +50,15 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
       r.json().then(function(d){
         if(d.error && d.error.message && d.error.message.indexOf('API key not valid')!==-1){
           console.error('Firebase API key is invalid:', d.error.message);
+          _firebaseKeyInvalid = true;
+          var errHtml = '<div style="background:#fdecea;border:1.5px solid #c0251a;border-radius:8px;padding:12px 14px;margin-bottom:12px;text-align:center">' +
+            '<div style="font-size:14px;font-weight:700;color:#c0251a;margin-bottom:4px">Clé API Firebase invalide</div>' +
+            '<div style="font-size:12px;color:#5a5448">La connexion au serveur est impossible. Veuillez contacter l\'administrateur du site pour mettre à jour la clé API dans les paramètres Firebase.</div>' +
+            '</div>';
           var msgEl = document.getElementById('login-msg');
-          if(msgEl){
-            msgEl.innerHTML = '<span style="color:#c0251a">⚠️ Clé API Firebase invalide. Contactez l\'administrateur du site.</span>';
-          }
+          if(msgEl) msgEl.innerHTML = errHtml;
           var regMsgEl = document.getElementById('reg-msg');
-          if(regMsgEl){
-            regMsgEl.innerHTML = '<span style="color:#c0251a">⚠️ Clé API Firebase invalide. Contactez l\'administrateur du site.</span>';
-          }
+          if(regMsgEl) regMsgEl.innerHTML = errHtml;
         }
       }).catch(function(){});
     }
@@ -85,6 +87,7 @@ function setMsg(id, msg, ok){
 }
 
 function doLogin(){
+  if(_firebaseKeyInvalid){ setMsg('login-msg','Clé API Firebase invalide. Connexion impossible.',false); return; }
   var email = document.getElementById('login-email').value.trim();
   var pwd   = document.getElementById('login-pwd').value;
   if(!email||!pwd){ setMsg('login-msg','Remplissez tous les champs.',false); return; }
@@ -103,6 +106,7 @@ function doLogin(){
 }
 
 function doRegister(){
+  if(_firebaseKeyInvalid){ setMsg('reg-msg','Clé API Firebase invalide. Inscription impossible.',false); return; }
   var name  = document.getElementById('reg-name').value.trim();
   var email = document.getElementById('reg-email').value.trim();
   var pwd   = document.getElementById('reg-pwd').value;
