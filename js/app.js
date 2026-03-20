@@ -629,6 +629,13 @@ function switchConjTab(verbId,idx,btn){
 // RENDER PAGE ROUTER
 // ============================================================
 function renderPage(page){
+  // Handle dynamic video pages (video-xxx)
+  if(page&&page.startsWith('video-')){
+    const vid=page.replace('video-','');
+    const c=document.getElementById('content');
+    if(c)c.innerHTML=renderVideoPage(vid);
+    return;
+  }
   const c=document.getElementById('content');
   switch(page){
     case 'welcome':     c.innerHTML=pageWelcome();break;
@@ -7458,20 +7465,6 @@ function skipConjExpress(){const d=window._conjState;if(!d)return;d.setQi(d.qi()
 // (Already integrated into buildFlashcards above — no additional code needed)
 
 // ============================================================
-// VIDEO PAGE ROUTING — handle video-* pages dynamically
-// ============================================================
-// Override the default case to handle video-* pages
-const _origRenderPage=renderPage;
-function renderPage(page){
-  if(page&&page.startsWith('video-')){
-    const vid=page.replace('video-','');
-    const c=document.getElementById('content');
-    if(c)c.innerHTML=renderVideoPage(vid);
-    return;
-  }
-  _origRenderPage(page);
-}
-
 // ============================================================
 // TIME TRACKING — session timer
 // ============================================================
