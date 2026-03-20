@@ -41,19 +41,25 @@ const db   = firebase.firestore();
 // Persist login across sessions (stays logged in on all devices)
 auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
-// Validate Firebase API key works — detect invalid key early
+// Validate Firebase API key works — detect invalid key or blocked API early
 var _firebaseKeyInvalid = false;
 (function checkFirebaseApiKey(){
   var url = 'https://www.googleapis.com/identitytoolkit/v3/relyingparty/getProjectConfig?key=' + firebaseConfig.apiKey;
   fetch(url).then(function(r){
     if(!r.ok){
       r.json().then(function(d){
-        if(d.error && d.error.message && d.error.message.indexOf('API key not valid')!==-1){
-          console.error('Firebase API key is invalid:', d.error.message);
+        var errMsg = (d.error && d.error.message) ? d.error.message : '';
+        if(errMsg.indexOf('API key not valid')!==-1 || errMsg.indexOf('blocked')!==-1 || errMsg.indexOf('PERMISSION_DENIED')!==-1 || errMsg.indexOf('Identity Toolkit')!==-1){
+          console.error('Firebase API key issue:', errMsg);
           _firebaseKeyInvalid = true;
+          var isBlocked = errMsg.indexOf('blocked')!==-1 || errMsg.indexOf('PERMISSION_DENIED')!==-1;
+          var title = isBlocked ? 'Authentification bloquée' : 'Clé API Firebase invalide';
+          var detail = isBlocked
+            ? 'L\'API Identity Toolkit n\'est pas activée pour cette clé API. Allez dans Google Cloud Console &gt; APIs &amp; Services &gt; Credentials, sélectionnez la clé API, et ajoutez <b>Identity Toolkit API</b> à la liste des APIs autorisées.'
+            : 'La connexion au serveur est impossible. Veuillez contacter l\'administrateur du site pour mettre à jour la clé API dans les paramètres Firebase.';
           var errHtml = '<div style="background:#fdecea;border:1.5px solid #c0251a;border-radius:8px;padding:12px 14px;margin-bottom:12px;text-align:center">' +
-            '<div style="font-size:14px;font-weight:700;color:#c0251a;margin-bottom:4px">Clé API Firebase invalide</div>' +
-            '<div style="font-size:12px;color:#5a5448">La connexion au serveur est impossible. Veuillez contacter l\'administrateur du site pour mettre à jour la clé API dans les paramètres Firebase.</div>' +
+            '<div style="font-size:14px;font-weight:700;color:#c0251a;margin-bottom:4px">' + title + '</div>' +
+            '<div style="font-size:12px;color:#5a5448">' + detail + '</div>' +
             '</div>';
           var msgEl = document.getElementById('login-msg');
           if(msgEl) msgEl.innerHTML = errHtml;
@@ -99,7 +105,9 @@ function doLogin(){
                 e.code==='auth/too-many-requests' ? 'Trop de tentatives. Réessayez plus tard.' :
                 e.code==='auth/network-request-failed' ? 'Erreur réseau. Vérifiez votre connexion.' :
                 e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Clé API Firebase invalide. Contactez l\'administrateur.' :
+                (e.code && e.code.indexOf('auth/requests-to-this-api')===0) ? 'L\'authentification est bloquée. L\'API Identity Toolkit doit être activée dans Google Cloud Console. Contactez l\'administrateur.' :
                 (e.message && e.message.indexOf('API key not valid')!==-1) ? 'Clé API Firebase invalide. Contactez l\'administrateur.' :
+                (e.message && e.message.indexOf('are-blocked')!==-1) ? 'L\'authentification est bloquée. L\'API Identity Toolkit doit être activée dans Google Cloud Console. Contactez l\'administrateur.' :
                 'Erreur : '+e.message;
       setMsg('login-msg', msg, false);
     });
@@ -128,7 +136,9 @@ function doRegister(){
                 e.code==='auth/too-many-requests' ? 'Trop de tentatives. Réessayez plus tard.' :
                 e.code==='auth/network-request-failed' ? 'Erreur réseau. Vérifiez votre connexion.' :
                 e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Clé API Firebase invalide. Contactez l\'administrateur.' :
+                (e.code && e.code.indexOf('auth/requests-to-this-api')===0) ? 'L\'authentification est bloquée. L\'API Identity Toolkit doit être activée dans Google Cloud Console. Contactez l\'administrateur.' :
                 (e.message && e.message.indexOf('API key not valid')!==-1) ? 'Clé API Firebase invalide. Contactez l\'administrateur.' :
+                (e.message && e.message.indexOf('are-blocked')!==-1) ? 'L\'authentification est bloquée. L\'API Identity Toolkit doit être activée dans Google Cloud Console. Contactez l\'administrateur.' :
                 'Erreur : '+e.message;
       setMsg('reg-msg', msg, false);
     });
@@ -139,7 +149,12 @@ function doForgot(){
   if(!email){ setMsg('login-msg','Entrez votre email ci-dessus.', false); return; }
   auth.sendPasswordResetEmail(email)
     .then(function(){ setMsg('login-msg','Email de réinitialisation envoyé !', true); })
-    .catch(function(){ setMsg('login-msg','Email introuvable.', false); });
+    .catch(function(e){
+      var msg = (e.code && e.code.indexOf('auth/requests-to-this-api')===0) || (e.message && e.message.indexOf('are-blocked')!==-1)
+        ? 'L\'authentification est bloquée. L\'API Identity Toolkit doit être activée. Contactez l\'administrateur.'
+        : 'Email introuvable.';
+      setMsg('login-msg', msg, false);
+    });
 }
 
 function doLogout(){
