@@ -69,8 +69,10 @@ function doLogin(){
   setMsg('login-msg','Connexion...', true);
   auth.signInWithEmailAndPassword(email, pwd)
     .catch(function(e){
-      var msg = e.code==='auth/user-not-found'||e.code==='auth/wrong-password' ? 'Email ou mot de passe incorrect.' :
-                e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
+      var msg = e.code==='auth/user-not-found'||e.code==='auth/wrong-password'||e.code==='auth/invalid-credential' ? 'Email ou mot de passe incorrect.' :
+                e.code==='auth/invalid-email' ? 'Email invalide.' :
+                e.code==='auth/too-many-requests' ? 'Trop de tentatives. Réessayez plus tard.' :
+                e.code==='auth/network-request-failed' ? 'Erreur réseau. Vérifiez votre connexion.' : 'Erreur : '+e.message;
       setMsg('login-msg', msg, false);
     });
 }
@@ -92,7 +94,10 @@ function doRegister(){
     })
     .catch(function(e){
       var msg = e.code==='auth/email-already-in-use' ? 'Cet email est déjà utilisé.' :
-                e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
+                e.code==='auth/invalid-email' ? 'Email invalide.' :
+                e.code==='auth/weak-password' ? 'Mot de passe trop faible (6 caractères min).' :
+                e.code==='auth/too-many-requests' ? 'Trop de tentatives. Réessayez plus tard.' :
+                e.code==='auth/network-request-failed' ? 'Erreur réseau. Vérifiez votre connexion.' : 'Erreur : '+e.message;
       setMsg('reg-msg', msg, false);
     });
 }
@@ -137,6 +142,16 @@ auth.onAuthStateChanged(function(user){
       var isNew=(Object.keys(userState.done||{}).length===0&&!(userState.xp));
       if(isNew){go('onboarding');}else{go('welcome');}
       checkSurpriseTest();
+    }).catch(function(err){
+      // Firestore failed but user is authenticated — show app with defaults
+      console.error('Firestore load error:', err);
+      userProfile = {name: user.displayName||user.email.split('@')[0], av:'😊'};
+      userState   = {done:{}, xp:0, streak:0, lastDate:'', badges:{}, toeicBest:null, toeicHistory:[]};
+      document.getElementById('pav').textContent   = userProfile.av;
+      document.getElementById('pname').textContent = userProfile.name;
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app').style.display          = 'flex';
+      go('welcome');
     });
   } else {
     currentUser = null;

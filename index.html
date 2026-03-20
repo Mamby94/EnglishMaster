@@ -17,10 +17,10 @@
 <meta name="mobile-web-app-capable" content="yes">
 <!-- CSS -->
 <link rel="stylesheet" href="css/styles.css">
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Firebase SDK (defer to avoid blocking page render) -->
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -29,14 +29,14 @@
   <div style="background:#fff;border-radius:20px;box-shadow:0 8px 40px rgba(0,0,0,.12);padding:40px;width:100%;max-width:420px">
     <div style="text-align:center;margin-bottom:28px">
       <div style="font-size:2.5rem;margin-bottom:8px">&#x1F1EC;&#x1F1E7;</div>
-      <div style="font-size:1.5rem;font-weight:800;color:var(--text)">English Master</div>
-      <div style="font-size:13px;color:var(--text2);margin-top:4px">A1 &rarr; C2 &middot; Progression synchronis&eacute;e sur tous vos appareils</div>
+      <div style="font-size:1.5rem;font-weight:800;color:var(--text,#1e1b16)">English Master</div>
+      <div style="font-size:13px;color:var(--text2,#5a5448);margin-top:4px">A1 &rarr; C2 &middot; Progression synchronis&eacute;e sur tous vos appareils</div>
     </div>
 
     <!-- Tab switcher -->
-    <div style="display:flex;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:24px">
-      <button id="tab-login" onclick="showTab('login')" style="flex:1;padding:8px;border-radius:7px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:var(--blue);color:#fff;transition:all .2s">Connexion</button>
-      <button id="tab-register" onclick="showTab('register')" style="flex:1;padding:8px;border-radius:7px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--text2);transition:all .2s">Cr&eacute;er un compte</button>
+    <div style="display:flex;background:var(--bg3,#f0ede8);border-radius:10px;padding:4px;margin-bottom:24px">
+      <button id="tab-login" onclick="showTab('login')" style="flex:1;padding:8px;border-radius:7px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:var(--blue,#1d5cb8);color:#fff;transition:all .2s">Connexion</button>
+      <button id="tab-register" onclick="showTab('register')" style="flex:1;padding:8px;border-radius:7px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--text2,#5a5448);transition:all .2s">Cr&eacute;er un compte</button>
     </div>
 
     <!-- Login form -->
@@ -56,7 +56,7 @@
           onkeydown="if(event.key==='Enter')doLogin()">
       </div>
       <div id="login-msg" style="font-size:13px;min-height:18px;margin-bottom:12px;text-align:center"></div>
-      <button onclick="doLogin()" style="width:100%;padding:11px;border-radius:9px;border:none;background:var(--blue);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s">
+      <button onclick="doLogin()" style="width:100%;padding:11px;border-radius:9px;border:none;background:var(--blue,#1d5cb8);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s">
         Se connecter &rarr;
       </button>
       <div style="text-align:center;margin-top:12px">
@@ -86,7 +86,7 @@
           onkeydown="if(event.key==='Enter')doRegister()">
       </div>
       <div id="reg-msg" style="font-size:13px;min-height:18px;margin-bottom:12px;text-align:center"></div>
-      <button onclick="doRegister()" style="width:100%;padding:11px;border-radius:9px;border:none;background:var(--green);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s">
+      <button onclick="doRegister()" style="width:100%;padding:11px;border-radius:9px;border:none;background:var(--green,#1a7a3a);color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s">
         Cr&eacute;er mon compte &rarr;
       </button>
     </div>
@@ -252,7 +252,7 @@
 </div>
 <div id="toast"></div>
 
-<!-- Application JavaScript -->
-<script src="js/app.js"></script>
+<!-- Application JavaScript (defer to execute after Firebase in document order) -->
+<script defer src="js/app.js"></script>
 </body>
 </html>
