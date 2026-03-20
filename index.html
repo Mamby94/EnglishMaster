@@ -8,7 +8,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🇬🇧 English Master A1→C2</title>
 <!-- PWA -->
-<!-- manifest disabled -->
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1d5cb8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -720,8 +720,15 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
 </main>
 </div>
 <div id="toast"></div>
-<script>if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(s){s.unregister();});});}
-if(window.caches){caches.keys().then(function(n){n.forEach(function(k){caches.delete(k);});});}
+<script>
+// Fix: si dernière page était sheets, rediriger vers welcome
+try {
+  var _st = JSON.parse(localStorage.getItem('emState')||'{}');
+  if(_st.currentPage === 'sheets' || _st.currentPage === 'leaderboard') {
+    _st.currentPage = 'welcome';
+    localStorage.setItem('emState', JSON.stringify(_st));
+  }
+} catch(e){}
 
 // Global dialogue helper
 function dl(lines){return `<div class="dlines">${lines.map(l=>`<div class="dline${l.b?' b':''}"><div class="dav">${l.b?'🧑':'👩'}</div><div class="dbub"><div class="en">${l.en} <span class="audio" onclick="speak('${l.en.replace(/'/g,"\\'")}')">🔊</span></div><div class="fr">${l.fr}</div></div></div>`).join('')}</div>`;}
@@ -6295,7 +6302,8 @@ function generateSheet(id){
     html='<h1>📥 Fiche mémo — English Master</h1><p>Utilisez Ctrl+P pour imprimer ou enregistrer en PDF.</p>';
   }
   var win=window.open('','_blank');
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>English Master — Fiche</title><style>'+css+'</style></head><body>'+html+'<hr style="margin-top:30px"><p style="font-size:11px;color:#999">Généré par English Master A1→C2 — '+new Date().toLocaleDateString('fr-FR')+'</p></body></html>');
+  if(!win||win===window){alert('Veuillez autoriser les popups pour cette fonction.');return;}
+  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>English Master — Fiche</title><style>'+css+'</'+'style></head><body>'+html+'<hr style="margin-top:30px"><p style="font-size:11px;color:#999">Généré par English Master A1→C2 — '+new Date().toLocaleDateString('fr-FR')+'</p></body></html>');
   win.document.close();
 }
 
@@ -7132,7 +7140,7 @@ function generateSheet(id){
     html='<h1>📥 Fiche mémo — English Master</h1><p>Ctrl+P pour enregistrer en PDF.</p>';
   }
   var w=window.open('','_blank');
-  if(w){w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>English Master — Fiche</title><style>'+css+'</style></head><body>'+html+'<hr style="margin-top:30px"><p style="font-size:10px;color:#999">English Master A1→C2 · '+new Date().toLocaleDateString('fr-FR')+'</p></body></html>');w.document.close();}
+  if(w){w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>English Master — Fiche</title><style>'+css+'</'+'style></head><body>'+html+'<hr style="margin-top:30px"><p style="font-size:10px;color:#999">English Master A1→C2 · '+new Date().toLocaleDateString('fr-FR')+'</p></body></html>');w.document.close();}
 }
 
 // ============================================================
