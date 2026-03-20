@@ -486,10 +486,6 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
 #content{padding:36px 32px 80px}
 }
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 
@@ -720,6 +716,10 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
 </main>
 </div>
 <div id="toast"></div>
+<!-- Firebase SDK (loaded here to avoid render-blocking blank page) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
 // Fix: si dernière page était sheets, rediriger vers welcome
 try {
