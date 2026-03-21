@@ -936,7 +936,7 @@ function checkStreak(){
     s.streak=s.lastDate===yest?(s.streak||0)+1:1;s.lastDate=today;setState(s);
   }
 }
-function addXP(n){const s=getState();s.xp=(s.xp||0)+n;setState(s);updateStats();}
+function addXP(n){const s=getState();s.xp=(s.xp||0)+n;setState(s);updateStats();var d=new Date().toDateString();var a=JSON.parse(localStorage.getItem('em_activity')||'{}');a[d]=(a[d]||0)+n;localStorage.setItem('em_activity',JSON.stringify(a));}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 
 // ============================================================
@@ -1271,6 +1271,12 @@ function switchConjTab(verbId,idx,btn){
 // ============================================================
 function renderPage(page){
   const c=document.getElementById('content');
+  // Handle video-* pages dynamically
+  if(page&&page.startsWith('video-')){
+    const vid=page.replace('video-','');
+    if(c)c.innerHTML=renderVideoPage(vid);
+    return;
+  }
   switch(page){
     case 'welcome':     c.innerHTML=pageWelcome();break;
     case 'a1-phon':    c.innerHTML=pageA1Phon();break;
@@ -6580,59 +6586,7 @@ function startChallenge(){
 function pageB2Match(){return '<div class="phdr">'+levelTag('tgb2','B2')+'<h1>🔗 Matching B2</h1><p class="pdesc">Associez chaque expression idiomatique à sa signification.</p></div><div class="sec"><div id="match-b2"><div style="text-align:center;padding:20px;color:var(--text3)">Chargement...</div></div></div>'+doneBar('b2-match','b2-reading');}
 function pageC1Match(){return '<div class="phdr">'+levelTag('tgc1','C1')+'<h1>🔗 Matching C1</h1><p class="pdesc">Associez chaque mot académique C1 à sa définition.</p></div><div class="sec"><div id="match-c1"><div style="text-align:center;padding:20px;color:var(--text3)">Chargement...</div></div></div>'+doneBar('c1-match','c1-reading');}
 
-// ============================================================
-// TEST SURPRISE — auto-trigger
-// ============================================================
-function checkSurpriseTest(){
-  var settings=JSON.parse(localStorage.getItem('em_settings')||'{}');
-  if(settings.surprise!=='on') return;
-  var last=localStorage.getItem('surprise_last');
-  var today=new Date().toDateString();
-  if(last===today) return;
-  var freq=settings['surprise-freq']||'daily';
-  var lastDate=last?new Date(last):new Date(0);
-  var now=new Date();
-  var daysDiff=Math.round((now-lastDate)/(1000*60*60*24));
-  var needed=freq==='daily'?1:freq==='2days'?2:7;
-  if(daysDiff>=needed){
-    localStorage.setItem('surprise_last',today);
-    setTimeout(function(){triggerSurpriseTest();},2000);
-  }
-}
-function triggerSurpriseTest(){
-  var s=getState();
-  var done=Object.keys(s.done||{});
-  if(done.length<3) return;
-  // Pick 5 random questions from completed levels
-  var allQ=[].concat(QUIZ_A1,QUIZ_A2,QUIZ_B1,QUIZ_B2,QUIZ_C1,QUIZ_C2);
-  var qs=allQ.sort(function(){return Math.random()-.5;}).slice(0,5);
-  if(confirm('🎯 Test surprise ! Prêt(e) pour 5 questions rapides ?')){
-    renderSurpriseTest(qs);
-  }
-}
-function renderSurpriseTest(qs){
-  var qi=0,score=0;
-  function render(){
-    if(qi>=qs.length){
-      showToast('Test surprise : '+score+'/'+qs.length+' ! +'+score*5+' XP');
-      addXP(score*5);return;
-    }
-    var q=qs[qi];
-    var opts=[].concat(q.options).sort(function(){return Math.random()-.5;});
-    document.getElementById('content').innerHTML='<div class="phdr"><h1>🎯 Test Surprise</h1></div>'
-      +'<div class="qcard"><div class="qnum">Q'+(qi+1)+'/'+qs.length+'</div><div class="qtext">'+q.q+'</div>'
-      +'<div class="qopts">'+opts.map(function(o){return '<button class="qopt" onclick="answerSurprise(\''+o.replace(/'/g,"\\'")+'\',\''+q.correct.replace(/'/g,"\\'")+'\')">'+(o)+'</button>';}).join('')+'</div></div>';
-    window._surprise={qs,qi:()=>qi,setQi:(v)=>{qi=v;},score:()=>score,setScore:(v)=>{score=v;},render};
-  }
-  render();
-}
-function answerSurprise(chosen,correct){
-  var d=window._surprise; if(!d) return;
-  var ok=chosen===correct;
-  if(ok)d.setScore(d.score()+1);
-  d.setQi(d.qi()+1);
-  setTimeout(function(){d.render();},400);
-}
+// (Surprise test functions consolidated below near video section)
 
 
 // ============================================================
@@ -7374,14 +7328,7 @@ function pageOnboarding(){
 // ============================================================
 // SRS Badge tracker
 // ============================================================
-var _origAddXPFn=addXP;
-function addXP(n){
-  _origAddXPFn(n);
-  // Track daily XP
-  var d=new Date().toDateString();
-  var a=JSON.parse(localStorage.getItem('em_activity')||'{}');
-  a[d]=(a[d]||0)+n;localStorage.setItem('em_activity',JSON.stringify(a));
-}
+// (addXP daily tracking integrated into main addXP function above)
 
 // ============================================================
 // UPGRADE: buildFlashcards with SRS
@@ -8097,21 +8044,6 @@ function skipConjExpress(){const d=window._conjState;if(!d)return;d.setQi(d.qi()
 // SRS DISPLAY FIX — show next review interval on flashcard
 // ============================================================
 // (Already integrated into buildFlashcards above — no additional code needed)
-
-// ============================================================
-// VIDEO PAGE ROUTING — handle video-* pages dynamically
-// ============================================================
-// Override the default case to handle video-* pages
-const _origRenderPage=renderPage;
-function renderPage(page){
-  if(page&&page.startsWith('video-')){
-    const vid=page.replace('video-','');
-    const c=document.getElementById('content');
-    if(c)c.innerHTML=renderVideoPage(vid);
-    return;
-  }
-  _origRenderPage(page);
-}
 
 // ============================================================
 // TIME TRACKING — session timer
