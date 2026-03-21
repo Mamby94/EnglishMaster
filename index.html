@@ -504,14 +504,14 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
     </div>
 
     <!-- Firebase error banner (hidden by default) -->
-    <div id="firebase-error-banner" style="display:none;background:#fff3f3;border:1.5px solid #e74c3c;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
-      <div style="font-size:22px;margin-bottom:6px">⚠️</div>
-      <div style="font-size:13px;font-weight:700;color:#e74c3c;margin-bottom:4px">Connexion au serveur impossible</div>
-      <div style="font-size:12px;color:#666;line-height:1.4;margin-bottom:12px">La clé API Firebase est invalide. La connexion et la synchronisation cloud ne sont pas disponibles.</div>
+    <div id="firebase-error-banner" style="display:none;background:#f0f7ff;border:1.5px solid #1d5cb8;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
+      <div style="font-size:22px;margin-bottom:6px">📱</div>
+      <div style="font-size:13px;font-weight:700;color:#1d5cb8;margin-bottom:4px">Mode hors ligne</div>
+      <div style="font-size:12px;color:#666;line-height:1.4;margin-bottom:12px">Le serveur n'est pas disponible. Votre progression sera sauvegardée localement sur cet appareil.</div>
       <button onclick="startLocalMode()" style="width:100%;padding:11px;border-radius:9px;border:none;background:#1a7a3a;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:8px">
         Continuer en mode local →
       </button>
-      <div style="font-size:11px;color:#999;line-height:1.3">Votre progression sera sauvegardée localement sur cet appareil.</div>
+      <div id="auto-local-msg" style="font-size:11px;color:#999;line-height:1.3">Redirection automatique dans quelques secondes...</div>
     </div>
 
     <!-- Tab switcher -->
@@ -768,8 +768,13 @@ let userProfile = {};
 let userState   = {done:{}, xp:0, streak:0, lastDate:''};
 let firebaseOk  = true;
 
-// Check Firebase API key validity
+// Check Firebase API key validity and auto-enter local mode if unavailable
 (function checkFirebaseKey(){
+  // If user already has a local profile, restore it immediately
+  var savedLocal = localStorage.getItem('em_local_profile');
+  if(savedLocal){
+    try{ JSON.parse(savedLocal); setTimeout(startLocalMode, 100); return; }catch(e){}
+  }
   fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + firebaseConfig.apiKey, {
     method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
   }).then(function(r){ return r.json(); }).then(function(d){
@@ -777,12 +782,15 @@ let firebaseOk  = true;
       firebaseOk = false;
       var banner = document.getElementById('firebase-error-banner');
       if(banner) banner.style.display = 'block';
+      // Auto-enter local mode after a short delay
+      setTimeout(function(){ if(!currentUser) startLocalMode(); }, 2000);
     }
   }).catch(function(){
-    // Network error — also show banner with local mode option
+    // Network error — auto-enter local mode
     firebaseOk = false;
     var banner = document.getElementById('firebase-error-banner');
     if(banner) banner.style.display = 'block';
+    setTimeout(function(){ if(!currentUser) startLocalMode(); }, 2000);
   });
 })();
 
@@ -792,6 +800,7 @@ let firebaseOk  = true;
 let localMode = false;
 
 function startLocalMode(){
+  if(localMode) return; // Prevent double-entry
   localMode = true;
   // Load or create local profile
   var saved = JSON.parse(localStorage.getItem('em_local_profile')||'null');
@@ -843,22 +852,24 @@ function setMsg(id, msg, ok){
 }
 
 function doLogin(){
-  if(!firebaseOk){ setMsg('login-msg','Firebase indisponible. Utilisez le mode local ci-dessus.',false); return; }
+  if(!firebaseOk){ startLocalMode(); return; }
   var email = document.getElementById('login-email').value.trim();
   var pwd   = document.getElementById('login-pwd').value;
   if(!email||!pwd){ setMsg('login-msg','Remplissez tous les champs.',false); return; }
   setMsg('login-msg','Connexion...', true);
   auth.signInWithEmailAndPassword(email, pwd)
     .catch(function(e){
-      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Clé API Firebase invalide. Configurez FIREBASE_API_KEY dans Netlify (Site settings > Environment variables).' :
+      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Serveur indisponible. Passage en mode local...' :
                 e.code==='auth/user-not-found'||e.code==='auth/wrong-password' ? 'Email ou mot de passe incorrect.' :
-                e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
+                e.code==='auth/invalid-email' ? 'Email invalide.' :
+                e.code==='auth/invalid-credential' ? 'Email ou mot de passe incorrect.' : 'Erreur : '+e.message;
+      if(e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.'){ setTimeout(startLocalMode,1000); }
       setMsg('login-msg', msg, false);
     });
 }
 
 function doRegister(){
-  if(!firebaseOk){ setMsg('reg-msg','Firebase indisponible. Utilisez le mode local ci-dessus.',false); return; }
+  if(!firebaseOk){ startLocalMode(); return; }
   var name  = document.getElementById('reg-name').value.trim();
   var email = document.getElementById('reg-email').value.trim();
   var pwd   = document.getElementById('reg-pwd').value;
@@ -874,9 +885,10 @@ function doRegister(){
       });
     })
     .catch(function(e){
-      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Clé API Firebase invalide. Configurez FIREBASE_API_KEY dans Netlify (Site settings > Environment variables).' :
+      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Serveur indisponible. Passage en mode local...' :
                 e.code==='auth/email-already-in-use' ? 'Cet email est déjà utilisé.' :
                 e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
+      if(e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.'){ setTimeout(startLocalMode,1000); }
       setMsg('reg-msg', msg, false);
     });
 }
@@ -4905,7 +4917,7 @@ function pageSettings(){
 
 <div class="settings-section"><h2>👤 Compte</h2>
 <div class="setting-row"><div><div class="setting-label">Email</div><div class="setting-desc" id="set-email">—</div></div></div>
-<div class="setting-row"><div><div class="setting-label">Progression</div><div class="setting-desc">Toutes vos données sont sauvegardées sur Firebase</div></div></div>
+<div class="setting-row"><div><div class="setting-label">Progression</div><div class="setting-desc">Vos données sont sauvegardées localement sur cet appareil</div></div></div>
 <div class="btn-row"><button class="btn btn-sec btn-sm" onclick="doLogout()">⏻ Se déconnecter</button></div>
 </div>`;
 }
@@ -6661,58 +6673,8 @@ function pageB2Match(){return '<div class="phdr">'+levelTag('tgb2','B2')+'<h1>�
 function pageC1Match(){return '<div class="phdr">'+levelTag('tgc1','C1')+'<h1>🔗 Matching C1</h1><p class="pdesc">Associez chaque mot académique C1 à sa définition.</p></div><div class="sec"><div id="match-c1"><div style="text-align:center;padding:20px;color:var(--text3)">Chargement...</div></div></div>'+doneBar('c1-match','c1-reading');}
 
 // ============================================================
-// TEST SURPRISE — auto-trigger
+// TEST SURPRISE — (see improved version below)
 // ============================================================
-function checkSurpriseTest(){
-  var settings=JSON.parse(localStorage.getItem('em_settings')||'{}');
-  if(settings.surprise!=='on') return;
-  var last=localStorage.getItem('surprise_last');
-  var today=new Date().toDateString();
-  if(last===today) return;
-  var freq=settings['surprise-freq']||'daily';
-  var lastDate=last?new Date(last):new Date(0);
-  var now=new Date();
-  var daysDiff=Math.round((now-lastDate)/(1000*60*60*24));
-  var needed=freq==='daily'?1:freq==='2days'?2:7;
-  if(daysDiff>=needed){
-    localStorage.setItem('surprise_last',today);
-    setTimeout(function(){triggerSurpriseTest();},2000);
-  }
-}
-function triggerSurpriseTest(){
-  var s=getState();
-  var done=Object.keys(s.done||{});
-  if(done.length<3) return;
-  // Pick 5 random questions from completed levels
-  var allQ=[].concat(QUIZ_A1,QUIZ_A2,QUIZ_B1,QUIZ_B2,QUIZ_C1,QUIZ_C2);
-  var qs=allQ.sort(function(){return Math.random()-.5;}).slice(0,5);
-  if(confirm('🎯 Test surprise ! Prêt(e) pour 5 questions rapides ?')){
-    renderSurpriseTest(qs);
-  }
-}
-function renderSurpriseTest(qs){
-  var qi=0,score=0;
-  function render(){
-    if(qi>=qs.length){
-      showToast('Test surprise : '+score+'/'+qs.length+' ! +'+score*5+' XP');
-      addXP(score*5);return;
-    }
-    var q=qs[qi];
-    var opts=[].concat(q.options).sort(function(){return Math.random()-.5;});
-    document.getElementById('content').innerHTML='<div class="phdr"><h1>🎯 Test Surprise</h1></div>'
-      +'<div class="qcard"><div class="qnum">Q'+(qi+1)+'/'+qs.length+'</div><div class="qtext">'+q.q+'</div>'
-      +'<div class="qopts">'+opts.map(function(o){return '<button class="qopt" onclick="answerSurprise(\''+o.replace(/'/g,"\\'")+'\',\''+q.correct.replace(/'/g,"\\'")+'\')">'+(o)+'</button>';}).join('')+'</div></div>';
-    window._surprise={qs,qi:()=>qi,setQi:(v)=>{qi=v;},score:()=>score,setScore:(v)=>{score=v;},render};
-  }
-  render();
-}
-function answerSurprise(chosen,correct){
-  var d=window._surprise; if(!d) return;
-  var ok=chosen===correct;
-  if(ok)d.setScore(d.score()+1);
-  d.setQi(d.qi()+1);
-  setTimeout(function(){d.render();},400);
-}
 
 
 // ============================================================
