@@ -507,7 +507,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
     <div id="firebase-error-banner" style="display:none;background:#fff3f3;border:1.5px solid #e74c3c;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
       <div style="font-size:22px;margin-bottom:6px">⚠️</div>
       <div style="font-size:13px;font-weight:700;color:#e74c3c;margin-bottom:4px">Connexion au serveur impossible</div>
-      <div style="font-size:12px;color:#666;line-height:1.4">La clé API Firebase est invalide. Veuillez mettre à jour la clé API dans la configuration Firebase du projet.</div>
+      <div style="font-size:12px;color:#666;line-height:1.4">La clé API Firebase est invalide. Veuillez ajouter la variable d'environnement <strong>FIREBASE_API_KEY</strong> dans les paramètres de votre site Netlify (Site settings &gt; Environment variables) avec une clé API valide depuis votre <a href="https://console.firebase.google.com" target="_blank" style="color:#e74c3c">Console Firebase</a>.</div>
     </div>
 
     <!-- Tab switcher -->
@@ -801,7 +801,7 @@ function doLogin(){
   setMsg('login-msg','Connexion...', true);
   auth.signInWithEmailAndPassword(email, pwd)
     .catch(function(e){
-      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Service indisponible : clé API Firebase invalide.' :
+      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Clé API Firebase invalide. Configurez FIREBASE_API_KEY dans Netlify (Site settings > Environment variables).' :
                 e.code==='auth/user-not-found'||e.code==='auth/wrong-password' ? 'Email ou mot de passe incorrect.' :
                 e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
       setMsg('login-msg', msg, false);
@@ -824,7 +824,7 @@ function doRegister(){
       });
     })
     .catch(function(e){
-      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Service indisponible : clé API Firebase invalide.' :
+      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Clé API Firebase invalide. Configurez FIREBASE_API_KEY dans Netlify (Site settings > Environment variables).' :
                 e.code==='auth/email-already-in-use' ? 'Cet email est déjà utilisé.' :
                 e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
       setMsg('reg-msg', msg, false);
