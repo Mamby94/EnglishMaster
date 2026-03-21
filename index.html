@@ -774,12 +774,12 @@ function setMsg(id, msg, ok){
 
 function doLogin(){
   var email = document.getElementById('login-email').value.trim();
-  var pwd   = document.getElementById('login-pwd').value;
+  var pwd   = document.getElementById('login-pwd').value.trim();
   if(!email||!pwd){ setMsg('login-msg','Remplissez tous les champs.',false); return; }
   setMsg('login-msg','Connexion...', true);
   auth.signInWithEmailAndPassword(email, pwd)
     .catch(function(e){
-      var msg = e.code==='auth/user-not-found'||e.code==='auth/wrong-password' ? 'Email ou mot de passe incorrect.' :
+      var msg = e.code==='auth/user-not-found'||e.code==='auth/wrong-password'||e.code==='auth/invalid-credential' ? 'Email ou mot de passe incorrect.' :
                 e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
       setMsg('login-msg', msg, false);
     });
@@ -788,7 +788,7 @@ function doLogin(){
 function doRegister(){
   var name  = document.getElementById('reg-name').value.trim();
   var email = document.getElementById('reg-email').value.trim();
-  var pwd   = document.getElementById('reg-pwd').value;
+  var pwd   = document.getElementById('reg-pwd').value.trim();
   if(!name||!email||!pwd){ setMsg('reg-msg','Remplissez tous les champs.',false); return; }
   if(pwd.length<6){ setMsg('reg-msg','Mot de passe trop court (6 min).',false); return; }
   setMsg('reg-msg','Création du compte...', true);
@@ -802,7 +802,8 @@ function doRegister(){
     })
     .catch(function(e){
       var msg = e.code==='auth/email-already-in-use' ? 'Cet email est déjà utilisé.' :
-                e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
+                e.code==='auth/invalid-email' ? 'Email invalide.' :
+                e.code==='auth/invalid-credential' ? 'Identifiants invalides.' : 'Erreur : '+e.message;
       setMsg('reg-msg', msg, false);
     });
 }
