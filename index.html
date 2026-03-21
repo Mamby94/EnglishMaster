@@ -485,6 +485,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
 :root{--sidebar-w:280px}
 #content{padding:36px 32px 80px}
 }
+</style>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -513,6 +514,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
       <div style="margin-bottom:12px">
         <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">EMAIL</label>
         <input type="email" id="login-email" placeholder="votre@email.com"
+          autocapitalize="off" autocorrect="off" spellcheck="false"
           style="width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:10px 13px;font-size:14px;outline:none;color:var(--text);transition:border-color .2s"
           onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"
           onkeydown="if(event.key==='Enter')doLogin()">
@@ -520,6 +522,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
       <div style="margin-bottom:20px">
         <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">MOT DE PASSE</label>
         <input type="password" id="login-pwd" placeholder="Votre mot de passe"
+          autocapitalize="off" autocorrect="off" autocomplete="current-password" spellcheck="false"
           style="width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:10px 13px;font-size:14px;outline:none;color:var(--text);transition:border-color .2s"
           onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"
           onkeydown="if(event.key==='Enter')doLogin()">
@@ -544,12 +547,14 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
       <div style="margin-bottom:12px">
         <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">EMAIL</label>
         <input type="email" id="reg-email" placeholder="votre@email.com"
+          autocapitalize="off" autocorrect="off" spellcheck="false"
           style="width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:10px 13px;font-size:14px;outline:none;color:var(--text);transition:border-color .2s"
           onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
       </div>
       <div style="margin-bottom:20px">
         <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">MOT DE PASSE</label>
         <input type="password" id="reg-pwd" placeholder="Minimum 6 caractères"
+          autocapitalize="off" autocorrect="off" autocomplete="new-password" spellcheck="false"
           style="width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:10px 13px;font-size:14px;outline:none;color:var(--text);transition:border-color .2s"
           onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"
           onkeydown="if(event.key==='Enter')doRegister()">
@@ -737,12 +742,12 @@ function dl(lines){return `<div class="dlines">${lines.map(l=>`<div class="dline
 // FIREBASE CONFIG — English Master
 // ============================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDf9FvRly2ZndOwXc_egBEiTc2RPmWo-HI",
-  authDomain: "english-master-407fd.firebaseapp.com",
-  projectId: "english-master-407fd",
-  storageBucket: "english-master-407fd.firebasestorage.app",
-  messagingSenderId: "782947742298",
-  appId: "1:782947742298:web:3de2f2dc4bf68450461e63"
+  apiKey: "AIzaSyBltaRiNd46-tQJsPJMMclfPZ4J1_6tXm0",
+  authDomain: "english-master-v2.firebaseapp.com",
+  projectId: "english-master-v2",
+  storageBucket: "english-master-v2.firebasestorage.app",
+  messagingSenderId: "469255954672",
+  appId: "1:469255954672:web:b229c44d2d1def68e7e235"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
@@ -774,7 +779,7 @@ function setMsg(id, msg, ok){
 
 function doLogin(){
   var email = document.getElementById('login-email').value.trim();
-  var pwd   = document.getElementById('login-pwd').value;
+  var pwd   = document.getElementById('login-pwd').value.trim();
   if(!email||!pwd){ setMsg('login-msg','Remplissez tous les champs.',false); return; }
   setMsg('login-msg','Connexion...', true);
   auth.signInWithEmailAndPassword(email, pwd)
@@ -931,7 +936,7 @@ function checkStreak(){
     s.streak=s.lastDate===yest?(s.streak||0)+1:1;s.lastDate=today;setState(s);
   }
 }
-function addXP(n){const s=getState();s.xp=(s.xp||0)+n;setState(s);updateStats();}
+function addXP(n){const s=getState();s.xp=(s.xp||0)+n;setState(s);updateStats();var d=new Date().toDateString();var a=JSON.parse(localStorage.getItem('em_activity')||'{}');a[d]=(a[d]||0)+n;localStorage.setItem('em_activity',JSON.stringify(a));}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2800);}
 
 // ============================================================
@@ -1266,6 +1271,12 @@ function switchConjTab(verbId,idx,btn){
 // ============================================================
 function renderPage(page){
   const c=document.getElementById('content');
+  // Handle video-* pages dynamically
+  if(page&&page.startsWith('video-')){
+    const vid=page.replace('video-','');
+    if(c)c.innerHTML=renderVideoPage(vid);
+    return;
+  }
   switch(page){
     case 'welcome':     c.innerHTML=pageWelcome();break;
     case 'a1-phon':    c.innerHTML=pageA1Phon();break;
@@ -1338,12 +1349,12 @@ function renderPage(page){
     case 'games':       c.innerHTML=pageGames();break;
     case 'game-chrono': c.innerHTML=pageGameChrono();break;
     case 'game-memory': c.innerHTML=pageGameMemory();break;
-    case 'game-wordorder': c.innerHTML=pageGameWordOrder();break;
-    case 'game-anagram':   c.innerHTML=pageGameAnagram();break;
-    case 'game-pendu':     c.innerHTML=pageGamePendu();break;
-    case 'game-intrus':    c.innerHTML=pageGameIntrus();break;
-    case 'game-imgword':   c.innerHTML=pageGameImgWord();break;
-    case 'game-vof':       c.innerHTML=pageGameVof();break;
+    case 'game-wordorder': pageGameWordOrder();break;
+    case 'game-anagram':   pageGameAnagram();break;
+    case 'game-pendu':     pageGamePendu();break;
+    case 'game-intrus':    pageGameIntrus();break;
+    case 'game-imgword':   pageGameImgWord();break;
+    case 'game-vof':       pageGameVof();break;
     case 'oral':           c.innerHTML=pageOral();break;
     case 'oral-hub':       c.innerHTML=pageOralHub();break;
     case 'onboarding':     c.innerHTML=pageOnboarding();break;
@@ -1357,9 +1368,9 @@ function renderPage(page){
     case 'c2-trans':       c.innerHTML=pageTranslation('c2');break;
     case 'videos':         c.innerHTML=pageVideos();break;
     case 'dictee-ecrite':  c.innerHTML=pageDicteeEcrite();break;
-    case 'game-sound':     c.innerHTML=pageGameSound();break;
-    case 'game-sort':      c.innerHTML=pageGameSort();break;
-    case 'game-conj-express': c.innerHTML=pageGameConjExpress();break;
+    case 'game-sound':     pageGameSound();break;
+    case 'game-sort':      pageGameSort();break;
+    case 'game-conj-express': pageGameConjExpress();break;
     case 'business':       c.innerHTML=pageBusinessEnglish();break;
     case 'survival':       c.innerHTML=pageSurvival();break;
     case 'francophones':   c.innerHTML=pageFrancophones();break;
@@ -5250,28 +5261,6 @@ function checkWO(correct){
 }
 function pageGameWordOrder_new(){go('game-wordorder');}
 
-function pageGameWordOrder(){
-  document.getElementById('content').innerHTML=`<div class="phdr"><h1>🔀 Remise en ordre</h1><p class="pdesc">Remettez les mots dans le bon ordre.</p></div><div class="sec" id="wo-container"><div style="text-align:center;padding:20px"><div style="font-size:3rem">🔀</div><button class="btn btn-primary" style="margin-top:16px" onclick="startWordOrder()">▶ Jouer</button></div></div>`;
-}
-function startWordOrder(){
-  const s=WO_SENTENCES[Math.floor(Math.random()*WO_SENTENCES.length)];
-  const words=s.en.split(' ').sort(()=>Math.random()-.5);
-  let placed=[],remaining=[...words];
-  function render(){
-    document.getElementById('wo-container').innerHTML=`
-<div style="background:var(--b1bg);border-left:3px solid var(--b1);padding:10px 14px;border-radius:0 var(--radius) var(--radius) 0;font-size:13px;color:var(--b1d);margin-bottom:14px">🇫🇷 ${s.fr}</div>
-<p style="font-size:13px;color:var(--text2);margin-bottom:8px">Cliquez les mots dans le bon ordre :</p>
-<div class="wo-slots">${placed.map((w,i)=>`<span class="wo-chip" onclick="woRemove(${i})">${w}</span>`).join('')}</div>
-<div class="wo-bank">${words.map((w,i)=>{const avail=remaining.filter(x=>x===w).length>0;return `<span class="wo-bank-chip ${avail?'':'used'}" onclick="woAdd('${w.replace(/'/g,"\\'")}',this)">${w}</span>`}).join('')}</div>
-<div class="btn-row"><button class="btn btn-primary" onclick="woCheck()">Vérifier ✓</button><button class="btn btn-sec" onclick="startWordOrder()">→ Nouvelle</button></div>
-<div id="wo-result"></div>`;
-  }
-  window._wo2={placed,remaining,words,sentence:s,render};render();
-}
-function woAdd(w,btn){const d=window._wo2;if(!d)return;const i=d.remaining.indexOf(w);if(i<0)return;d.remaining.splice(i,1);d.placed.push(w);d.render();}
-function woRemove(i){const d=window._wo2;if(!d)return;const w=d.placed.splice(i,1)[0];d.remaining.push(w);d.render();}
-function woCheck(){const d=window._wo2;if(!d)return;const ans=d.placed.join(' ');const ok=ans.toLowerCase()===d.sentence.en.toLowerCase();const el=document.getElementById('wo-result');if(el)el.innerHTML=ok?'<div style="color:var(--green);font-weight:700;padding:10px;background:var(--a1bg);border-radius:8px">✓ Parfait !</div>':`<div style="color:var(--red);padding:10px;background:#fdecea;border-radius:8px;font-weight:700">✗ Réponse : <span style="font-weight:400">${d.sentence.en}</span></div>`;if(ok)addXP(10);}
-
 // ============================================================
 // GAME: ANAGRAM
 // ============================================================
@@ -6575,59 +6564,7 @@ function startChallenge(){
 function pageB2Match(){return '<div class="phdr">'+levelTag('tgb2','B2')+'<h1>🔗 Matching B2</h1><p class="pdesc">Associez chaque expression idiomatique à sa signification.</p></div><div class="sec"><div id="match-b2"><div style="text-align:center;padding:20px;color:var(--text3)">Chargement...</div></div></div>'+doneBar('b2-match','b2-reading');}
 function pageC1Match(){return '<div class="phdr">'+levelTag('tgc1','C1')+'<h1>🔗 Matching C1</h1><p class="pdesc">Associez chaque mot académique C1 à sa définition.</p></div><div class="sec"><div id="match-c1"><div style="text-align:center;padding:20px;color:var(--text3)">Chargement...</div></div></div>'+doneBar('c1-match','c1-reading');}
 
-// ============================================================
-// TEST SURPRISE — auto-trigger
-// ============================================================
-function checkSurpriseTest(){
-  var settings=JSON.parse(localStorage.getItem('em_settings')||'{}');
-  if(settings.surprise!=='on') return;
-  var last=localStorage.getItem('surprise_last');
-  var today=new Date().toDateString();
-  if(last===today) return;
-  var freq=settings['surprise-freq']||'daily';
-  var lastDate=last?new Date(last):new Date(0);
-  var now=new Date();
-  var daysDiff=Math.round((now-lastDate)/(1000*60*60*24));
-  var needed=freq==='daily'?1:freq==='2days'?2:7;
-  if(daysDiff>=needed){
-    localStorage.setItem('surprise_last',today);
-    setTimeout(function(){triggerSurpriseTest();},2000);
-  }
-}
-function triggerSurpriseTest(){
-  var s=getState();
-  var done=Object.keys(s.done||{});
-  if(done.length<3) return;
-  // Pick 5 random questions from completed levels
-  var allQ=[].concat(QUIZ_A1,QUIZ_A2,QUIZ_B1,QUIZ_B2,QUIZ_C1,QUIZ_C2);
-  var qs=allQ.sort(function(){return Math.random()-.5;}).slice(0,5);
-  if(confirm('🎯 Test surprise ! Prêt(e) pour 5 questions rapides ?')){
-    renderSurpriseTest(qs);
-  }
-}
-function renderSurpriseTest(qs){
-  var qi=0,score=0;
-  function render(){
-    if(qi>=qs.length){
-      showToast('Test surprise : '+score+'/'+qs.length+' ! +'+score*5+' XP');
-      addXP(score*5);return;
-    }
-    var q=qs[qi];
-    var opts=[].concat(q.options).sort(function(){return Math.random()-.5;});
-    document.getElementById('content').innerHTML='<div class="phdr"><h1>🎯 Test Surprise</h1></div>'
-      +'<div class="qcard"><div class="qnum">Q'+(qi+1)+'/'+qs.length+'</div><div class="qtext">'+q.q+'</div>'
-      +'<div class="qopts">'+opts.map(function(o){return '<button class="qopt" onclick="answerSurprise(\''+o.replace(/'/g,"\\'")+'\',\''+q.correct.replace(/'/g,"\\'")+'\')">'+(o)+'</button>';}).join('')+'</div></div>';
-    window._surprise={qs,qi:()=>qi,setQi:(v)=>{qi=v;},score:()=>score,setScore:(v)=>{score=v;},render};
-  }
-  render();
-}
-function answerSurprise(chosen,correct){
-  var d=window._surprise; if(!d) return;
-  var ok=chosen===correct;
-  if(ok)d.setScore(d.score()+1);
-  d.setQi(d.qi()+1);
-  setTimeout(function(){d.render();},400);
-}
+// (Surprise test functions consolidated below near video section)
 
 
 // ============================================================
@@ -7369,14 +7306,7 @@ function pageOnboarding(){
 // ============================================================
 // SRS Badge tracker
 // ============================================================
-var _origAddXPFn=addXP;
-function addXP(n){
-  _origAddXPFn(n);
-  // Track daily XP
-  var d=new Date().toDateString();
-  var a=JSON.parse(localStorage.getItem('em_activity')||'{}');
-  a[d]=(a[d]||0)+n;localStorage.setItem('em_activity',JSON.stringify(a));
-}
+// (addXP daily tracking integrated into main addXP function above)
 
 // ============================================================
 // UPGRADE: buildFlashcards with SRS
@@ -8092,21 +8022,6 @@ function skipConjExpress(){const d=window._conjState;if(!d)return;d.setQi(d.qi()
 // SRS DISPLAY FIX — show next review interval on flashcard
 // ============================================================
 // (Already integrated into buildFlashcards above — no additional code needed)
-
-// ============================================================
-// VIDEO PAGE ROUTING — handle video-* pages dynamically
-// ============================================================
-// Override the default case to handle video-* pages
-const _origRenderPage=renderPage;
-function renderPage(page){
-  if(page&&page.startsWith('video-')){
-    const vid=page.replace('video-','');
-    const c=document.getElementById('content');
-    if(c)c.innerHTML=renderVideoPage(vid);
-    return;
-  }
-  _origRenderPage(page);
-}
 
 // ============================================================
 // TIME TRACKING — session timer
