@@ -777,11 +777,6 @@ let firebaseOk  = true;
 
 // Check Firebase API key validity and auto-enter local mode if unavailable
 (function checkFirebaseKey(){
-  // If user already has a local profile, restore it immediately
-  var savedLocal = localStorage.getItem('em_local_profile');
-  if(savedLocal){
-    try{ JSON.parse(savedLocal); setTimeout(startLocalMode, 100); return; }catch(e){}
-  }
   // Fallback: if check takes too long, enter local mode
   var checkTimeout = setTimeout(function(){
     if(!localMode && !currentUser){ firebaseOk = false; startLocalMode(); }
@@ -795,7 +790,8 @@ let firebaseOk  = true;
       // Enter local mode immediately — no delay, no error banner
       startLocalMode();
     } else {
-      // Firebase is OK — show login forms
+      // Firebase is OK — let onAuthStateChanged handle logged-in users
+      // or show login forms for new users
       showAuthForms();
     }
   }).catch(function(){
@@ -807,6 +803,8 @@ let firebaseOk  = true;
 })();
 
 function showAuthForms(){
+  // If user is already logged in via Firebase persistence, don't show forms
+  if(currentUser || localMode) return;
   var checking = document.getElementById('firebase-checking');
   if(checking) checking.style.display = 'none';
   var tabs = document.getElementById('auth-tabs');
@@ -8006,8 +8004,8 @@ function skipConjExpress(){const d=window._conjState;if(!d)return;d.setQi(d.qi()
 // VIDEO PAGE ROUTING — handle video-* pages dynamically
 // ============================================================
 // Override the default case to handle video-* pages
-const _origRenderPage=renderPage;
-function renderPage(page){
+var _origRenderPage=renderPage;
+renderPage=function(page){
   if(page&&page.startsWith('video-')){
     const vid=page.replace('video-','');
     const c=document.getElementById('content');
@@ -8015,7 +8013,7 @@ function renderPage(page){
     return;
   }
   _origRenderPage(page);
-}
+};
 
 // ============================================================
 // TIME TRACKING — session timer
