@@ -1374,7 +1374,13 @@ function renderPage(page){
     case 'b2-match':       c.innerHTML=pageB2Match();setTimeout(()=>buildMatch('match-b2',MATCH_B2,'b2-match'),50);break;
     case 'c1-match':       c.innerHTML=pageC1Match();setTimeout(()=>buildMatch('match-c1',MATCH_C1,'c1-match'),50);break;
     case 'c2-flash':       c.innerHTML=pageFlash('c2','C2');setTimeout(()=>buildFlashcards('fc-c2',FC_C2,'c2-flash'),50);break;
-    default: c.innerHTML='<p style="padding:40px;color:var(--text3)">Page introuvable</p>';
+    default:
+      if(page&&page.startsWith('video-')){
+        var vid=page.replace('video-','');
+        c.innerHTML=renderVideoPage(vid);
+      } else {
+        c.innerHTML='<p style="padding:40px;color:var(--text3)">Page introuvable</p>';
+      }
   }
 }
 
@@ -8084,20 +8090,7 @@ function skipConjExpress(){const d=window._conjState;if(!d)return;d.setQi(d.qi()
 // ============================================================
 // (Already integrated into buildFlashcards above — no additional code needed)
 
-// ============================================================
-// VIDEO PAGE ROUTING — handle video-* pages dynamically
-// ============================================================
-// Override the default case to handle video-* pages
-const _origRenderPage=renderPage;
-function renderPage(page){
-  if(page&&page.startsWith('video-')){
-    const vid=page.replace('video-','');
-    const c=document.getElementById('content');
-    if(c)c.innerHTML=renderVideoPage(vid);
-    return;
-  }
-  _origRenderPage(page);
-}
+// VIDEO PAGE ROUTING is handled inside the main renderPage() default case
 
 // ============================================================
 // TIME TRACKING — session timer
