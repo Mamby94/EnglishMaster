@@ -513,6 +513,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
       <div style="margin-bottom:12px">
         <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">EMAIL</label>
         <input type="email" id="login-email" placeholder="votre@email.com"
+          autocapitalize="off" autocorrect="off" spellcheck="false"
           style="width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:10px 13px;font-size:14px;outline:none;color:var(--text);transition:border-color .2s"
           onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"
           onkeydown="if(event.key==='Enter')doLogin()">
@@ -520,6 +521,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
       <div style="margin-bottom:20px">
         <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">MOT DE PASSE</label>
         <input type="password" id="login-pwd" placeholder="Votre mot de passe"
+          autocapitalize="off" autocorrect="off" autocomplete="current-password" spellcheck="false"
           style="width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:10px 13px;font-size:14px;outline:none;color:var(--text);transition:border-color .2s"
           onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"
           onkeydown="if(event.key==='Enter')doLogin()">
@@ -544,12 +546,14 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
       <div style="margin-bottom:12px">
         <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">EMAIL</label>
         <input type="email" id="reg-email" placeholder="votre@email.com"
+          autocapitalize="off" autocorrect="off" spellcheck="false"
           style="width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:10px 13px;font-size:14px;outline:none;color:var(--text);transition:border-color .2s"
           onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'">
       </div>
       <div style="margin-bottom:20px">
         <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">MOT DE PASSE</label>
         <input type="password" id="reg-pwd" placeholder="Minimum 6 caractères"
+          autocapitalize="off" autocorrect="off" autocomplete="new-password" spellcheck="false"
           style="width:100%;background:var(--bg3);border:1.5px solid var(--border);border-radius:8px;padding:10px 13px;font-size:14px;outline:none;color:var(--text);transition:border-color .2s"
           onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"
           onkeydown="if(event.key==='Enter')doRegister()">
@@ -774,7 +778,7 @@ function setMsg(id, msg, ok){
 
 function doLogin(){
   var email = document.getElementById('login-email').value.trim();
-  var pwd   = document.getElementById('login-pwd').value;
+  var pwd   = document.getElementById('login-pwd').value.trim();
   if(!email||!pwd){ setMsg('login-msg','Remplissez tous les champs.',false); return; }
   setMsg('login-msg','Connexion...', true);
   auth.signInWithEmailAndPassword(email, pwd)
