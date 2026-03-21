@@ -1349,12 +1349,12 @@ function renderPage(page){
     case 'games':       c.innerHTML=pageGames();break;
     case 'game-chrono': c.innerHTML=pageGameChrono();break;
     case 'game-memory': c.innerHTML=pageGameMemory();break;
-    case 'game-wordorder': c.innerHTML=pageGameWordOrder();break;
-    case 'game-anagram':   c.innerHTML=pageGameAnagram();break;
-    case 'game-pendu':     c.innerHTML=pageGamePendu();break;
-    case 'game-intrus':    c.innerHTML=pageGameIntrus();break;
-    case 'game-imgword':   c.innerHTML=pageGameImgWord();break;
-    case 'game-vof':       c.innerHTML=pageGameVof();break;
+    case 'game-wordorder': pageGameWordOrder();break;
+    case 'game-anagram':   pageGameAnagram();break;
+    case 'game-pendu':     pageGamePendu();break;
+    case 'game-intrus':    pageGameIntrus();break;
+    case 'game-imgword':   pageGameImgWord();break;
+    case 'game-vof':       pageGameVof();break;
     case 'oral':           c.innerHTML=pageOral();break;
     case 'oral-hub':       c.innerHTML=pageOralHub();break;
     case 'onboarding':     c.innerHTML=pageOnboarding();break;
@@ -1368,9 +1368,9 @@ function renderPage(page){
     case 'c2-trans':       c.innerHTML=pageTranslation('c2');break;
     case 'videos':         c.innerHTML=pageVideos();break;
     case 'dictee-ecrite':  c.innerHTML=pageDicteeEcrite();break;
-    case 'game-sound':     c.innerHTML=pageGameSound();break;
-    case 'game-sort':      c.innerHTML=pageGameSort();break;
-    case 'game-conj-express': c.innerHTML=pageGameConjExpress();break;
+    case 'game-sound':     pageGameSound();break;
+    case 'game-sort':      pageGameSort();break;
+    case 'game-conj-express': pageGameConjExpress();break;
     case 'business':       c.innerHTML=pageBusinessEnglish();break;
     case 'survival':       c.innerHTML=pageSurvival();break;
     case 'francophones':   c.innerHTML=pageFrancophones();break;
@@ -5260,28 +5260,6 @@ function checkWO(correct){
   if(ok)addXP(10);
 }
 function pageGameWordOrder_new(){go('game-wordorder');}
-
-function pageGameWordOrder(){
-  document.getElementById('content').innerHTML=`<div class="phdr"><h1>🔀 Remise en ordre</h1><p class="pdesc">Remettez les mots dans le bon ordre.</p></div><div class="sec" id="wo-container"><div style="text-align:center;padding:20px"><div style="font-size:3rem">🔀</div><button class="btn btn-primary" style="margin-top:16px" onclick="startWordOrder()">▶ Jouer</button></div></div>`;
-}
-function startWordOrder(){
-  const s=WO_SENTENCES[Math.floor(Math.random()*WO_SENTENCES.length)];
-  const words=s.en.split(' ').sort(()=>Math.random()-.5);
-  let placed=[],remaining=[...words];
-  function render(){
-    document.getElementById('wo-container').innerHTML=`
-<div style="background:var(--b1bg);border-left:3px solid var(--b1);padding:10px 14px;border-radius:0 var(--radius) var(--radius) 0;font-size:13px;color:var(--b1d);margin-bottom:14px">🇫🇷 ${s.fr}</div>
-<p style="font-size:13px;color:var(--text2);margin-bottom:8px">Cliquez les mots dans le bon ordre :</p>
-<div class="wo-slots">${placed.map((w,i)=>`<span class="wo-chip" onclick="woRemove(${i})">${w}</span>`).join('')}</div>
-<div class="wo-bank">${words.map((w,i)=>{const avail=remaining.filter(x=>x===w).length>0;return `<span class="wo-bank-chip ${avail?'':'used'}" onclick="woAdd('${w.replace(/'/g,"\\'")}',this)">${w}</span>`}).join('')}</div>
-<div class="btn-row"><button class="btn btn-primary" onclick="woCheck()">Vérifier ✓</button><button class="btn btn-sec" onclick="startWordOrder()">→ Nouvelle</button></div>
-<div id="wo-result"></div>`;
-  }
-  window._wo2={placed,remaining,words,sentence:s,render};render();
-}
-function woAdd(w,btn){const d=window._wo2;if(!d)return;const i=d.remaining.indexOf(w);if(i<0)return;d.remaining.splice(i,1);d.placed.push(w);d.render();}
-function woRemove(i){const d=window._wo2;if(!d)return;const w=d.placed.splice(i,1)[0];d.remaining.push(w);d.render();}
-function woCheck(){const d=window._wo2;if(!d)return;const ans=d.placed.join(' ');const ok=ans.toLowerCase()===d.sentence.en.toLowerCase();const el=document.getElementById('wo-result');if(el)el.innerHTML=ok?'<div style="color:var(--green);font-weight:700;padding:10px;background:var(--a1bg);border-radius:8px">✓ Parfait !</div>':`<div style="color:var(--red);padding:10px;background:#fdecea;border-radius:8px;font-weight:700">✗ Réponse : <span style="font-weight:400">${d.sentence.en}</span></div>`;if(ok)addXP(10);}
 
 // ============================================================
 // GAME: ANAGRAM
