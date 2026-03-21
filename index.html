@@ -507,7 +507,11 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
     <div id="firebase-error-banner" style="display:none;background:#fff3f3;border:1.5px solid #e74c3c;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
       <div style="font-size:22px;margin-bottom:6px">⚠️</div>
       <div style="font-size:13px;font-weight:700;color:#e74c3c;margin-bottom:4px">Connexion au serveur impossible</div>
-      <div style="font-size:12px;color:#666;line-height:1.4">La clé API Firebase est invalide. Veuillez ajouter la variable d'environnement <strong>FIREBASE_API_KEY</strong> dans les paramètres de votre site Netlify (Site settings &gt; Environment variables) avec une clé API valide depuis votre <a href="https://console.firebase.google.com" target="_blank" style="color:#e74c3c">Console Firebase</a>.</div>
+      <div style="font-size:12px;color:#666;line-height:1.4;margin-bottom:12px">La clé API Firebase est invalide. La connexion et la synchronisation cloud ne sont pas disponibles.</div>
+      <button onclick="startLocalMode()" style="width:100%;padding:11px;border-radius:9px;border:none;background:#1a7a3a;color:#fff;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;margin-bottom:8px">
+        Continuer en mode local →
+      </button>
+      <div style="font-size:11px;color:#999;line-height:1.3">Votre progression sera sauvegardée localement sur cet appareil.</div>
     </div>
 
     <!-- Tab switcher -->
@@ -774,8 +778,52 @@ let firebaseOk  = true;
       var banner = document.getElementById('firebase-error-banner');
       if(banner) banner.style.display = 'block';
     }
-  }).catch(function(){});
+  }).catch(function(){
+    // Network error — also show banner with local mode option
+    firebaseOk = false;
+    var banner = document.getElementById('firebase-error-banner');
+    if(banner) banner.style.display = 'block';
+  });
 })();
+
+// ============================================================
+// LOCAL MODE — works without Firebase
+// ============================================================
+let localMode = false;
+
+function startLocalMode(){
+  localMode = true;
+  // Load or create local profile
+  var saved = JSON.parse(localStorage.getItem('em_local_profile')||'null');
+  if(saved){
+    userProfile = {name: saved.name, av: saved.av};
+    userState = saved.state || {done:{}, xp:0, streak:0, lastDate:'', badges:{}, toeicBest:null, toeicHistory:[]};
+  } else {
+    userProfile = {name: 'Utilisateur', av: '😊'};
+    userState = {done:{}, xp:0, streak:0, lastDate:'', badges:{}, toeicBest:null, toeicHistory:[]};
+  }
+  currentUser = {uid:'local', email:'local@mode'};
+  loadSettings();
+  document.getElementById('pav').textContent   = userProfile.av;
+  document.getElementById('pname').textContent = userProfile.name;
+  document.getElementById('auth-screen').style.display = 'none';
+  document.getElementById('app').style.display          = 'flex';
+  // Show local mode indicator
+  var plvl = document.getElementById('plvl');
+  if(plvl) plvl.textContent = 'Mode local';
+  checkStreak();
+  updateStats();
+  var isNew = (Object.keys(userState.done||{}).length===0 && !(userState.xp));
+  if(isNew){go('onboarding');}else{go('welcome');}
+  smartSidebar();
+}
+
+function saveLocalState(){
+  if(!localMode) return;
+  localStorage.setItem('em_local_profile', JSON.stringify({
+    name: userProfile.name, av: userProfile.av, state: userState
+  }));
+}
 
 // ============================================================
 // AUTH FUNCTIONS
@@ -795,6 +843,7 @@ function setMsg(id, msg, ok){
 }
 
 function doLogin(){
+  if(!firebaseOk){ setMsg('login-msg','Firebase indisponible. Utilisez le mode local ci-dessus.',false); return; }
   var email = document.getElementById('login-email').value.trim();
   var pwd   = document.getElementById('login-pwd').value;
   if(!email||!pwd){ setMsg('login-msg','Remplissez tous les champs.',false); return; }
@@ -809,6 +858,7 @@ function doLogin(){
 }
 
 function doRegister(){
+  if(!firebaseOk){ setMsg('reg-msg','Firebase indisponible. Utilisez le mode local ci-dessus.',false); return; }
   var name  = document.getElementById('reg-name').value.trim();
   var email = document.getElementById('reg-email').value.trim();
   var pwd   = document.getElementById('reg-pwd').value;
@@ -840,6 +890,13 @@ function doForgot(){
 }
 
 function doLogout(){
+  if(localMode){
+    localMode = false;
+    currentUser = null;
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('auth-screen').style.display = 'flex';
+    return;
+  }
   auth.signOut();
 }
 
@@ -885,6 +942,10 @@ auth.onAuthStateChanged(function(user){
 function getState(){ return userState; }
 function setState(s){
   userState = s;
+  if(localMode){
+    saveLocalState();
+    return;
+  }
   if(currentUser){
     var update={done:s.done,xp:s.xp,streak:s.streak,lastDate:s.lastDate};
     if(s.badges)update.badges=s.badges;
@@ -8527,6 +8588,7 @@ function savePseudo(){
 }
 
 function publishScore(){
+  if(localMode){showToast('⚠️ Classement indisponible en mode local');return;}
   var pseudo=localStorage.getItem('em_pseudo');
   if(!pseudo){showToast('⚠️ Définissez d\'abord un pseudo !');return;}
   var s=getState();
@@ -8550,6 +8612,7 @@ function publishScore(){
 function loadLeaderboard(){
   var el=document.getElementById('lb-list');
   if(!el)return;
+  if(localMode){el.innerHTML='<div class="infobox">Le classement nécessite une connexion Firebase. Vous êtes en mode local.</div>';return;}
   // Try ordered query, fall back to unordered if index missing
   var query=db.collection('leaderboard').orderBy('xp','desc').limit(20);
   query.get().then(function(snap){
@@ -8575,6 +8638,7 @@ function loadLeaderboard(){
 }
 
 function createChallenge(){
+  if(localMode){showToast('⚠️ Défis indisponibles en mode local');return;}
   var lvl=document.getElementById('chal-quiz-lvl')?document.getElementById('chal-quiz-lvl').value:'b1';
   var qData=lvl==='a1'?QUIZ_A1:lvl==='a2'?QUIZ_A2:lvl==='b1'?QUIZ_B1:lvl==='b2'?QUIZ_B2:lvl==='c1'?QUIZ_C1:QUIZ_C2;
   // Generate a challenge code and seed
@@ -8603,6 +8667,7 @@ function createChallenge(){
 }
 
 function joinChallenge(){
+  if(localMode){showToast('⚠️ Défis indisponibles en mode local');return;}
   var code=prompt('Entrez le code du défi (ex: DEFI-B1-1234) :');
   if(!code)return;
   code=code.trim().toUpperCase();
