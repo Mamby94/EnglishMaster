@@ -486,10 +486,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
 #content{padding:36px 32px 80px}
 }
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Local Auth System (no external dependencies) -->
 </head>
 <body>
 
@@ -734,22 +731,92 @@ try {
 function dl(lines){return `<div class="dlines">${lines.map(l=>`<div class="dline${l.b?' b':''}"><div class="dav">${l.b?'🧑':'👩'}</div><div class="dbub"><div class="en">${l.en} <span class="audio" onclick="speak('${l.en.replace(/'/g,"\\'")}')">🔊</span></div><div class="fr">${l.fr}</div></div></div>`).join('')}</div>`;}
 
 // ============================================================
-// FIREBASE CONFIG — English Master
+// LOCAL AUTH SYSTEM — English Master (no Firebase dependency)
 // ============================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyDf9FvRly2ZndOwXc_egBEiTc2RPmWo-HI",
-  authDomain: "english-master-407fd.firebaseapp.com",
-  projectId: "english-master-407fd",
-  storageBucket: "english-master-407fd.firebasestorage.app",
-  messagingSenderId: "782947742298",
-  appId: "1:782947742298:web:3de2f2dc4bf68450461e63"
+// Simple localStorage-based authentication
+var _authCallbacks = [];
+function _notifyAuth(user) { _authCallbacks.forEach(function(cb){ cb(user); }); }
+
+// Simulated auth & db objects for compatibility
+var auth = {
+  setPersistence: function() { return Promise.resolve(); },
+  signInWithEmailAndPassword: function(email, pwd) {
+    var users = JSON.parse(localStorage.getItem('em_users') || '{}');
+    var key = email.toLowerCase();
+    if (!users[key]) return Promise.reject({code:'auth/user-not-found', message:'Utilisateur non trouvé'});
+    if (users[key].pwd !== pwd) return Promise.reject({code:'auth/wrong-password', message:'Mot de passe incorrect'});
+    var user = {uid: users[key].uid, email: email, displayName: users[key].name};
+    localStorage.setItem('em_current_user', JSON.stringify(user));
+    _notifyAuth(user);
+    return Promise.resolve({user: user});
+  },
+  createUserWithEmailAndPassword: function(email, pwd) {
+    var users = JSON.parse(localStorage.getItem('em_users') || '{}');
+    var key = email.toLowerCase();
+    if (users[key]) return Promise.reject({code:'auth/email-already-in-use', message:'Email déjà utilisé'});
+    var uid = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    users[key] = {uid: uid, pwd: pwd, email: email};
+    localStorage.setItem('em_users', JSON.stringify(users));
+    var user = {uid: uid, email: email};
+    localStorage.setItem('em_current_user', JSON.stringify(user));
+    _notifyAuth(user);
+    return Promise.resolve({user: user});
+  },
+  sendPasswordResetEmail: function(email) {
+    var users = JSON.parse(localStorage.getItem('em_users') || '{}');
+    if (!users[email.toLowerCase()]) return Promise.reject({code:'auth/user-not-found'});
+    return Promise.resolve();
+  },
+  signOut: function() {
+    localStorage.removeItem('em_current_user');
+    _notifyAuth(null);
+    return Promise.resolve();
+  },
+  onAuthStateChanged: function(cb) {
+    _authCallbacks.push(cb);
+    // Check for existing session
+    var saved = localStorage.getItem('em_current_user');
+    if (saved) {
+      try { setTimeout(function(){ cb(JSON.parse(saved)); }, 50); } catch(e) { setTimeout(function(){ cb(null); }, 50); }
+    } else {
+      setTimeout(function(){ cb(null); }, 50);
+    }
+  }
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db   = firebase.firestore();
+
+// Local Firestore-like storage
+var db = {
+  collection: function(name) {
+    return {
+      doc: function(id) {
+        var storeKey = 'em_db_' + name + '_' + id;
+        return {
+          get: function() {
+            var data = localStorage.getItem(storeKey);
+            if (data) {
+              var parsed = JSON.parse(data);
+              return Promise.resolve({exists: true, data: function(){ return parsed; }});
+            }
+            return Promise.resolve({exists: false, data: function(){ return null; }});
+          },
+          set: function(val) {
+            localStorage.setItem(storeKey, JSON.stringify(val));
+            return Promise.resolve();
+          },
+          update: function(val) {
+            var existing = JSON.parse(localStorage.getItem(storeKey) || '{}');
+            for (var k in val) { existing[k] = val[k]; }
+            localStorage.setItem(storeKey, JSON.stringify(existing));
+            return Promise.resolve();
+          }
+        };
+      }
+    };
+  }
+};
 
 // Persist login across sessions (stays logged in on all devices)
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
+// Persistence is handled automatically via localStorage
 
 let currentUser = null;
 let userProfile = {};
@@ -856,7 +923,7 @@ auth.onAuthStateChanged(function(user){
 });
 
 // ============================================================
-// STATE — read/write to Firestore
+// STATE — read/write to localStorage
 // ============================================================
 function getState(){ return userState; }
 function setState(s){
@@ -4654,7 +4721,7 @@ const QUIZ_C2=[
 // ============================================================
 // INIT — PROFILE SYSTEM
 // ============================================================
-// Firebase handles auth state — no manual init needed
+// Local auth handles state — no manual init needed
 // onAuthStateChanged above fires automatically on page load
 
 // PWA — Register Service Worker
@@ -4820,7 +4887,7 @@ function pageSettings(){
 
 <div class="settings-section"><h2>👤 Compte</h2>
 <div class="setting-row"><div><div class="setting-label">Email</div><div class="setting-desc" id="set-email">—</div></div></div>
-<div class="setting-row"><div><div class="setting-label">Progression</div><div class="setting-desc">Toutes vos données sont sauvegardées sur Firebase</div></div></div>
+<div class="setting-row"><div><div class="setting-label">Progression</div><div class="setting-desc">Toutes vos données sont sauvegardées localement sur cet appareil</div></div></div>
 <div class="btn-row"><button class="btn btn-sec btn-sm" onclick="doLogout()">⏻ Se déconnecter</button></div>
 </div>`;
 }
@@ -8556,7 +8623,7 @@ function createChallenge(){
   // Generate a challenge code and seed
   var seed=Math.floor(Math.random()*9000)+1000;
   var code='DEFI-'+lvl.toUpperCase()+'-'+seed;
-  // Save challenge to Firestore
+  // Save challenge to local storage
   var pseudo=localStorage.getItem('em_pseudo')||userProfile.name||'Anonyme';
   if(currentUser){
     db.collection('challenges').doc(code).set({
@@ -8585,7 +8652,7 @@ function joinChallenge(){
   var match=code.match(/^DEFI-([A-Z0-9]+)-(\d+)$/);
   if(!match){showToast('❌ Code invalide. Format : DEFI-B1-1234');return;}
   var lvl=match[1].toLowerCase();var seed=parseInt(match[2]);
-  // Load from Firestore if exists
+  // Load from local storage if exists
   db.collection('challenges').doc(code).get().then(function(doc){
     if(doc.exists){
       var data=doc.data();
