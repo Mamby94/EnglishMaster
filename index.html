@@ -597,7 +597,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
     <div class="stat"><b id="done-n">0</b><small>✓ Faits</small></div>
   </div>
   <div id="gpbar"><div id="gpfill" style="width:0%"></div></div>
-  <div id="gplabel">0 / 52 modules</div>
+  <div id="gplabel">0 / 63 modules</div>
   <div style="display:flex;gap:5px;margin-top:8px;flex-wrap:wrap">
     <button onclick="go('test-niveau')" style="flex:1;background:var(--a1bg);border:1px solid var(--a1);color:var(--a1d);border-radius:6px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer">🎯 Test niveau</button>
     <button onclick="go('games')" style="flex:1;background:var(--b1bg);border:1px solid var(--b1);color:var(--b1d);border-radius:6px;padding:5px 8px;font-size:11px;font-weight:700;cursor:pointer">🎮 Jeux</button>
@@ -990,16 +990,16 @@ function setState(s){
 }
 
 
-const TOTAL_MODULES=52;
+const TOTAL_MODULES=63;
 
 // Modules per level for progress tracking
 const LEVEL_MODULES={
-  a1:['welcome','a1-phon','a1-greet','a1-numbers','a1-vocab','a1-grammar','a1-conj','a1-flash','a1-dialog','a1-fill','a1-match','a1-quiz'],
-  a2:['a2-vocab','a2-grammar','a2-conj','a2-irreg','a2-flash','a2-dialog','a2-fill','a2-match','a2-reading','a2-writing','a2-quiz'],
-  b1:['b1-vocab','b1-grammar','b1-conj','b1-phrasal','b1-flash','b1-dialog','b1-fill','b1-match','b1-reading','b1-writing','b1-quiz'],
-  b2:['b2-vocab','b2-grammar','b2-conj','b2-flash','b2-fill','b2-match','b2-reading','b2-writing','b2-debate','b2-quiz'],
-  c1:['c1-vocab','c1-grammar','c1-flash','c1-fill','c1-match','c1-reading','c1-writing','c1-quiz'],
-  c2:['c2-vocab','c2-grammar','c2-flash','c2-writing','c2-quiz'],
+  a1:['welcome','a1-phon','a1-greet','a1-numbers','a1-vocab','a1-grammar','a1-conj','a1-flash','a1-dialog','a1-fill','a1-trans','a1-match','a1-quiz'],
+  a2:['a2-vocab','a2-grammar','a2-conj','a2-irreg','a2-flash','a2-dialog','a2-fill','a2-trans','a2-match','a2-reading','a2-writing','a2-quiz'],
+  b1:['b1-vocab','b1-grammar','b1-conj','b1-phrasal','b1-flash','b1-dialog','b1-fill','b1-trans','b1-match','b1-reading','b1-writing','b1-quiz'],
+  b2:['b2-vocab','b2-grammar','b2-conj','b2-flash','b2-fill','b2-trans','b2-match','b2-reading','b2-writing','b2-debate','b2-quiz'],
+  c1:['c1-vocab','c1-grammar','c1-flash','c1-fill','c1-trans','c1-match','c1-reading','c1-writing','c1-quiz'],
+  c2:['c2-vocab','c2-grammar','c2-flash','c2-trans','c2-writing','c2-quiz'],
 };
 
 function markDone(id){
@@ -1036,10 +1036,10 @@ function updateStats(){
   });
   // Update current level label
   const pct=n/TOTAL_MODULES;
-  document.getElementById('plvl').textContent=
-    pct<.15?'A1 · Débutant':pct<.3?'A2 · Élémentaire':
+  const lvlLabel=pct<.15?'A1 · Débutant':pct<.3?'A2 · Élémentaire':
     pct<.5?'B1 · Intermédiaire':pct<.7?'B2 · Sup.':
     pct<.85?'C1 · Avancé':'C2 · Bilingue';
+  document.getElementById('plvl').textContent=localMode?'📱 '+lvlLabel:lvlLabel;
 }
 function checkStreak(){
   const s=getState();const today=new Date().toDateString();
@@ -1327,15 +1327,6 @@ function makeTrans(fr,answer,hint){
     <div class="btn-row"><button class="btn btn-primary btn-sm" onclick="checkTrans('${id}','${answer.replace(/'/g,"\\'")}','${fid}')">Vérifier ✓</button><button class="btn btn-sec btn-sm" onclick="revealFill('${id}','${answer.replace(/'/g,"\\'")}','${fid}')">Voir réponse</button><button class="btn btn-sec btn-sm" onclick="retryFill('${id}','${fid}')">🔄 Réessayer</button></div>
     <div class="ffeedback" id="${fid}"></div>
   </div>`;}
-function checkTrans(id,correct,fid){
-  const inp=document.getElementById(id);const fb=document.getElementById(fid);if(!inp)return;
-  const val=inp.value.trim().toLowerCase().replace(/[.,!?]/g,'');
-  const alts=correct.split('|').map(a=>a.trim().toLowerCase().replace(/[.,!?]/g,''));
-  const ok=alts.some(a=>val===a);
-  inp.classList.toggle('ok',ok);inp.classList.toggle('bad',!ok);
-  if(fb){fb.innerHTML=ok?'✓ Excellent !':`✗ Réponse attendue : <strong>${correct.split('|')[0]}</strong>`;fb.style.color=ok?'var(--green)':'var(--red)';fb.classList.add('show');}
-  if(ok)addXP(6);
-}
 
 // ============================================================
 // MATCHING ENGINE
@@ -1532,9 +1523,9 @@ function pageWelcome(){
   ];
   const pdj=phrases[new Date().getDate()%phrases.length];
   // Find next recommended module
-  const allMods=['a1-phon','a1-greet','a1-numbers','a1-vocab','a1-grammar','a1-conj','a1-flash','a1-dialog','a1-fill','a1-match','a1-quiz','a2-vocab','a2-grammar','a2-conj','a2-irreg','a2-flash','a2-dialog','a2-fill','a2-match','a2-reading','a2-writing','a2-quiz','b1-vocab','b1-grammar','b1-conj','b1-phrasal','b1-flash','b1-dialog','b1-fill','b1-match','b1-reading','b1-writing','b1-quiz'];
-  const nextMod=allMods.find(m=>!(s.done||{})[m])||'b2-vocab';
-  const nextNames={'a1-phon':'Phonétique A1','a1-greet':'Salutations A1','a1-vocab':'Vocabulaire A1','a1-grammar':'Grammaire A1','a1-conj':'Conjugaison A1','a1-flash':'Flashcards A1','a1-fill':'Lacunaires A1','a1-match':'Matching A1','a1-quiz':'Quiz A1','a2-vocab':'Vocabulaire A2','a2-grammar':'Grammaire A2','a2-conj':'Conjugaison A2','a2-irreg':'Verbes irréguliers','a2-flash':'Flashcards A2','a2-fill':'Lacunaires A2','a2-quiz':'Quiz A2','b1-vocab':'Vocabulaire B1','b1-grammar':'Grammaire B1','b1-fill':'Lacunaires B1','b1-quiz':'Quiz B1'};
+  const allMods=['a1-phon','a1-greet','a1-numbers','a1-vocab','a1-grammar','a1-conj','a1-flash','a1-dialog','a1-fill','a1-trans','a1-match','a1-quiz','a2-vocab','a2-grammar','a2-conj','a2-irreg','a2-flash','a2-dialog','a2-fill','a2-trans','a2-match','a2-reading','a2-writing','a2-quiz','b1-vocab','b1-grammar','b1-conj','b1-phrasal','b1-flash','b1-dialog','b1-fill','b1-trans','b1-match','b1-reading','b1-writing','b1-quiz','b2-vocab','b2-grammar','b2-conj','b2-flash','b2-fill','b2-trans','b2-match','b2-reading','b2-writing','b2-debate','b2-quiz','c1-vocab','c1-grammar','c1-flash','c1-fill','c1-trans','c1-match','c1-reading','c1-writing','c1-quiz','c2-vocab','c2-grammar','c2-flash','c2-trans','c2-writing','c2-quiz'];
+  const nextMod=allMods.find(m=>!(s.done||{})[m])||'c2-quiz';
+  const nextNames={'a1-phon':'Phonétique A1','a1-greet':'Salutations A1','a1-numbers':'Chiffres A1','a1-vocab':'Vocabulaire A1','a1-grammar':'Grammaire A1','a1-conj':'Conjugaison A1','a1-flash':'Flashcards A1','a1-dialog':'Dialogues A1','a1-fill':'Lacunaires A1','a1-trans':'Traduction A1','a1-match':'Matching A1','a1-quiz':'Quiz A1','a2-vocab':'Vocabulaire A2','a2-grammar':'Grammaire A2','a2-conj':'Conjugaison A2','a2-irreg':'Verbes irréguliers','a2-flash':'Flashcards A2','a2-dialog':'Dialogues A2','a2-fill':'Lacunaires A2','a2-trans':'Traduction A2','a2-match':'Matching A2','a2-reading':'Lecture A2','a2-writing':'Écriture A2','a2-quiz':'Quiz A2','b1-vocab':'Vocabulaire B1','b1-grammar':'Grammaire B1','b1-conj':'Conjugaison B1','b1-phrasal':'Phrasal Verbs','b1-flash':'Flashcards B1','b1-dialog':'Dialogues B1','b1-fill':'Lacunaires B1','b1-trans':'Traduction B1','b1-match':'Matching B1','b1-reading':'Lecture B1','b1-writing':'Écriture B1','b1-quiz':'Quiz B1','b2-vocab':'Vocabulaire B2','b2-grammar':'Grammaire B2','b2-conj':'Conjugaison B2','b2-flash':'Flashcards B2','b2-fill':'Lacunaires B2','b2-trans':'Traduction B2','b2-match':'Matching B2','b2-reading':'Lecture B2','b2-writing':'Écriture B2','b2-debate':'Débat B2','b2-quiz':'Quiz B2','c1-vocab':'Vocabulaire C1','c1-grammar':'Grammaire C1','c1-flash':'Flashcards C1','c1-fill':'Lacunaires C1','c1-trans':'Traduction C1','c1-match':'Matching C1','c1-reading':'Lecture C1','c1-writing':'Écriture C1','c1-quiz':'Quiz C1','c2-vocab':'Vocabulaire C2','c2-grammar':'Grammaire C2','c2-flash':'Flashcards C2','c2-trans':'Traduction C2','c2-writing':'Écriture C2','c2-quiz':'Quiz Final C2'};
   return `
 ${getStreakWarning()}
 <div class="dash-hero">
@@ -4799,8 +4790,10 @@ function saveSetting(key,val){
 }
 function getSetting(key){return (JSON.parse(localStorage.getItem('em_settings')||'{}')||{})[key];}
 function toggleSetting(key,cls){
-  const on=document.body.classList.toggle(cls);
-  saveSetting(key,on?'on':'off');
+  var on;
+  if(cls){on=document.body.classList.toggle(cls);}
+  else{on=getSetting(key)!=='on'; saveSetting(key,on?'on':'off');}
+  if(cls) saveSetting(key,on?'on':'off');
   const btn=document.getElementById('sw-'+key);
   if(btn)btn.classList.toggle('on',on);
 }
@@ -4948,34 +4941,6 @@ function toggleImmersion(){
   const btn=document.getElementById('sw-immersion');
   if(btn)btn.classList.toggle('on',on);
   showToast(on?'Mode immersion activé 🇬🇧':'Mode immersion désactivé');
-}
-
-// ============================================================
-// PAGE: STATS
-// ============================================================
-function pageStats(){
-  const s=getState();
-  const done=Object.keys(s.done||{}).length;
-  const pct=Math.round(done/TOTAL_MODULES*100);
-  const rows=Object.entries(LEVEL_MODULES).map(([lvl,mods])=>{
-    const d=mods.filter(m=>(s.done||{})[m]).length;
-    const p=Math.round(d/mods.length*100);
-    const colors={a1:'var(--a1)',a2:'var(--a2)',b1:'var(--b1)',b2:'var(--b2)',c1:'var(--c1)',c2:'var(--c2)'};
-    return `<div class="progress-level"><div class="pl-header"><span class="pl-name">${lvl.toUpperCase()} — ${['Débutant','Élémentaire','Intermédiaire','Sup.','Avancé','Bilingue'][Object.keys(LEVEL_MODULES).indexOf(lvl)]}</span><span class="pl-pct">${d}/${mods.length} · ${p}%</span></div><div class="pl-bar"><div class="pl-fill" style="width:${p}%;background:${colors[lvl]}"></div></div></div>`;
-  }).join('');
-  return `<div class="phdr"><h1>📈 Mes statistiques</h1></div>
-<div class="grid-3" style="margin-bottom:20px">
-<div class="stat-big"><div class="sb-val">${done}</div><div class="sb-label">Modules complétés</div></div>
-<div class="stat-big"><div class="sb-val">${s.xp||0}</div><div class="sb-label">Points XP</div></div>
-<div class="stat-big"><div class="sb-val">${s.streak||0}</div><div class="sb-label">🔥 Streak actuel</div></div>
-</div>
-<div class="grid-3" style="margin-bottom:20px">
-<div class="stat-big"><div class="sb-val">${pct}%</div><div class="sb-label">Programme complété</div></div>
-<div class="stat-big"><div class="sb-val">${Object.keys(s.badges||{}).length}</div><div class="sb-label">Badges gagnés</div></div>
-<div class="stat-big"><div class="sb-val">${s.toeicBest||'—'}</div><div class="sb-label">Meilleur score TOEIC</div></div>
-</div>
-<div class="sec"><h2>Progression par niveau</h2>${rows}</div>
-<div class="btn-row"><button class="btn btn-sec" onclick="go('badges')">🏆 Voir mes badges</button><button class="btn btn-primary" onclick="go('test-niveau')">🎯 Refaire le test de niveau</button></div>`;
 }
 
 // ============================================================
@@ -6349,82 +6314,6 @@ function pageConjAll(){
 }
 
 // ============================================================
-// PAGE: FICHES PDF TELECHARGEABLES
-// ============================================================
-function pageSheets(){
-  var sheets=[
-    {id:'s-grammar',icon:'📚',title:'Grammaire essentielle A1→B2',desc:'Toutes les règles grammaticales sur 4 pages'},
-    {id:'s-irreg',icon:'📋',title:'150 Verbes irréguliers',desc:'Infinitif, passé simple, participe passé'},
-    {id:'s-phrasal',icon:'⚡',title:'50 Phrasal Verbs B1',desc:'Les plus courants avec exemples'},
-    {id:'s-idioms',icon:'💡',title:'100 Idioms B2',desc:'Avec signification et exemples'},
-    {id:'s-vocab-themes',icon:'📖',title:'Vocabulaire thématique',desc:'Famille, voyage, business, émotions...'},
-    {id:'s-errors',icon:'🇫🇷',title:'Erreurs des francophones',desc:'Les 16 erreurs à ne plus faire'},
-    {id:'s-conjugaison',icon:'🔀',title:'Tableau de conjugaison',desc:'Tous les temps en un coup d\'œil'},
-    {id:'s-toeic',icon:'📊',title:'Préparation TOEIC',desc:'Structure du test + conseils'},
-    {id:'s-progress',icon:'👤',title:'Mon rapport de progression',desc:'Votre niveau, XP, modules, badges'},
-    {id:'s-flashcards',icon:'🃏',title:'Fiches à découper A1-A2',desc:'Cartes mémo imprimables'},
-  ];
-  var cards=sheets.map(function(s){
-    return '<div class="game-card" onclick="generateSheet(\''+s.id+'\')"><div class="gc-icon">'+s.icon+'</div><div class="gc-title">'+s.title+'</div><div class="gc-desc">'+s.desc+'</div><div class="gc-badge" style="background:var(--a1bg);color:var(--a1d)">📥 Télécharger PDF</div></div>';
-  }).join('');
-  return '<div class="phdr"><h1>📥 Fiches mémo & PDF</h1><p class="pdesc">Téléchargez des fiches de révision pour apprendre hors-ligne. Cliquez → une fenêtre s\'ouvre → Ctrl+P → Enregistrer en PDF.</p></div>'
-    +'<div class="infobox">💡 Pour sauvegarder en PDF : cliquez la fiche → dans la fenêtre qui s\'ouvre → appuyez <strong>Ctrl+P</strong> (Windows) ou <strong>Cmd+P</strong> (Mac) → choisissez <strong>"Enregistrer en PDF"</strong></div>'
-    +'<div class="game-grid">'+cards+'</div>';
-}
-
-function generateSheet(id){
-  var html='';
-  var css='body{font-family:Arial,sans-serif;margin:20px;color:#1e1b16;font-size:13px}h1{color:#1d5cb8;border-bottom:2px solid #1d5cb8;padding-bottom:6px}h2{color:#a05c00;margin-top:16px}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#eaf0fc;padding:6px 10px;text-align:left;border:1px solid #ddd}td{padding:5px 10px;border:1px solid #ddd}tr:nth-child(even){background:#f9f9f9}.tip{background:#fdf4e3;border-left:3px solid #a05c00;padding:8px 12px;margin:8px 0;font-size:12px}@media print{body{margin:10px}}';
-  if(id==='s-irreg'){
-    var rows=(['be/was,were/been/être','beat/beat/beaten/battre','begin/began/begun/commencer','break/broke/broken/casser','bring/brought/brought/apporter','build/built/built/construire','buy/bought/bought/acheter','catch/caught/caught/attraper','choose/chose/chosen/choisir','come/came/come/venir','do/did/done/faire','draw/drew/drawn/dessiner','drink/drank/drunk/boire','drive/drove/driven/conduire','eat/ate/eaten/manger','fall/fell/fallen/tomber','feel/felt/felt/ressentir','find/found/found/trouver','forget/forgot/forgotten/oublier','get/got/got/obtenir','give/gave/given/donner','go/went/gone/aller','grow/grew/grown/grandir','have/had/had/avoir','hear/heard/heard/entendre','keep/kept/kept/garder','know/knew/known/savoir','leave/left/left/partir','lose/lost/lost/perdre','make/made/made/faire-créer','meet/met/met/rencontrer','put/put/put/mettre','read/read/read/lire','run/ran/run/courir','say/said/said/dire','see/saw/seen/voir','send/sent/sent/envoyer','show/showed/shown/montrer','speak/spoke/spoken/parler','spend/spent/spent/dépenser','stand/stood/stood/se lever','swim/swam/swum/nager','take/took/taken/prendre','teach/taught/taught/enseigner','tell/told/told/raconter','think/thought/thought/penser','understand/understood/understood/comprendre','wake/woke/woken/réveiller','wear/wore/worn/porter','win/won/won/gagner','write/wrote/written/écrire']).map(function(r){var p=r.split('/');return '<tr><td><strong>'+p[0]+'</strong></td><td>'+p[1]+'</td><td>'+p[2]+'</td><td style="color:#666">'+p[3]+'</td></tr>';}).join('');
-    html='<h1>📋 150 Verbes Irréguliers — English Master</h1><table><thead><tr><th>Infinitif</th><th>Passé simple</th><th>Participe passé</th><th>Français</th></tr></thead><tbody>'+rows+'</tbody></table>';
-  } else if(id==='s-errors'){
-    html='<h1>🇫🇷 Erreurs typiques des francophones — English Master</h1>'
-      +[['I am agree','I agree','agree est un verbe, pas un adjectif'],['It depends of','It depends on','depend + on, pas of'],['Make a party','Have/throw a party','make ne s\'utilise pas avec party'],['I am boring','I am bored','boring = ennuyeux (la chose), bored = qui s\'ennuie (la personne)'],['Since 3 years','For 3 years','since + point précis, for + durée'],['I will call when I will arrive','I will call when I arrive','après when (futur), présent simple'],['I have 25 years','I am 25 years old','l\'âge utilise TO BE en anglais'],['She is sympathique','She is nice/kind','sympathetic = compatissant, pas sympa']].map(function(e){return '<div class="tip"><strong>✗ Erreur :</strong> '+e[0]+'<br><strong>✓ Correct :</strong> '+e[1]+'<br><em>Règle : '+e[2]+'</em></div>';}).join('');
-  } else if(id==='s-grammar'){
-    html='<h1>📚 Grammaire essentielle A1→B2 — English Master</h1>'
-      +'<h2>A1 — Présent Simple</h2><p>I/You/We/They + verbe · He/She/It + verbe+S · Négatif: don\'t/doesn\'t + verbe · Question: Do/Does + sujet + verbe?</p>'
-      +'<h2>A2 — Passé Simple</h2><p>Verbe + -ed (réguliers) ou forme irrégulière · Négatif: didn\'t + verbe · Question: Did + sujet + verbe?</p>'
-      +'<h2>B1 — Present Perfect</h2><p>have/has + participe passé · Jamais avec une date précise · Marqueurs: already, yet, ever, never, since, for, just</p>'
-      +'<h2>B1 — Conditionnels</h2><p>C1: If + présent → will + verbe · C2: If + passé → would + verbe · C3: If + past perfect → would have + PP</p>'
-      +'<h2>B2 — Structures avancées</h2><p>Inversion: Never have I... · Not only did she... · Wish + past simple (présent irréel) · Must/can\'t have + PP (déduction)</p>';
-  } else if(id==='s-progress'){
-    var s=getState();
-    var done=Object.keys(s.done||{}).length;
-    var name=userProfile.name||'Utilisateur';
-    html='<h1>👤 Rapport de Progression — '+name+'</h1>'
-      +'<table><tr><th>Modules complétés</th><td>'+done+'/57</td></tr>'
-      +'<tr><th>Points XP</th><td>'+(s.xp||0)+'</td></tr>'
-      +'<tr><th>Streak</th><td>'+(s.streak||0)+' jours</td></tr>'
-      +'<tr><th>Badges</th><td>'+Object.keys(s.badges||{}).length+'/'+BADGES_DEF.length+'</td></tr>'
-      +'<tr><th>Meilleur TOEIC</th><td>'+(s.toeicBest||'Non testé')+'</td></tr>'
-      +'</table>'
-      +'<h2>Progression par niveau</h2>'
-      +Object.entries(LEVEL_MODULES).map(function(e){var lvl=e[0],mods=e[1];var d=mods.filter(function(m){return (s.done||{})[m];}).length;return '<p><strong>'+lvl.toUpperCase()+'</strong> : '+d+'/'+mods.length+' modules ('+Math.round(d/mods.length*100)+'%)</p>';}).join('');
-  } else if(id==='s-phrasal'){
-    html='<h1>⚡ 50 Phrasal Verbs B1 — English Master</h1>'
-      +[['break down','tomber en panne'],['bring up','évoquer / élever'],['call off','annuler'],['carry on','continuer'],['come across','tomber sur'],['cut down on','réduire'],['deal with','gérer'],['end up','finir par'],['figure out','comprendre'],['get along with','s\'entendre avec'],['give up','abandonner'],['go through','traverser'],['hang out','passer du temps avec'],['keep up with','suivre le rythme'],['look after','s\'occuper de'],['look forward to','avoir hâte de'],['look into','examiner'],['look up','chercher'],['make up','inventer / se réconcilier'],['pick up','ramasser / apprendre'],['put off','remettre à plus tard'],['put up with','supporter'],['run into','tomber sur'],['run out of','manquer de'],['set up','établir / configurer'],['show up','apparaître, se pointer'],['sort out','régler'],['take off','décoller / enlever'],['take on','prendre en charge'],['take up','commencer (hobby)'],['turn down','refuser'],['turn up','arriver / monter (volume)']].map(function(p){return '<tr><td><strong>'+p[0]+'</strong></td><td>'+p[1]+'</td></tr>';}).join('');
-    html='<h1>⚡ 50 Phrasal Verbs B1</h1><table><thead><tr><th>Phrasal Verb</th><th>Signification</th></tr></thead><tbody>'+html+'</tbody></table>';
-  } else if(id==='s-conjugaison'){
-    html='<h1>🔀 Tableau de Conjugaison — TO WORK</h1>'
-      +[['Present Simple','I work / She works','Habitudes'],['Present Continuous','I am working','En ce moment'],['Present Perfect','I have worked','Passé lié au présent'],['Past Simple','I worked','Passé terminé'],['Past Continuous','I was working','En cours dans le passé'],['Past Perfect','I had worked','Avant un autre passé'],['Future (will)','I will work','Prédiction, décision'],['Going to','I am going to work','Intention, plan'],['Conditional 1','I will work (if...)','Probable'],['Conditional 2','I would work (if...)','Hypothétique'],['Conditional 3','I would have worked (if...)','Passé irréel'],['Passive Present','Work is done','Passif présent'],['Passive Past','Work was done','Passif passé']].map(function(r){return '<tr><td><strong>'+r[0]+'</strong></td><td style="font-family:monospace">'+r[1]+'</td><td style="color:#666">'+r[2]+'</td></tr>';}).join('');
-    html='<h1>🔀 Tableau de Conjugaison Complet</h1><table><thead><tr><th>Temps</th><th>Exemple (TO WORK)</th><th>Usage</th></tr></thead><tbody>'+html+'</tbody></table>';
-  } else if(id==='s-toeic'){
-    html='<h1>📊 Préparation TOEIC — English Master</h1>'
-      +'<h2>Structure du test (200 questions, 2h, score 10-990)</h2>'
-      +[['Partie 1','10 questions','Photographs — Décrire des photos'],['Partie 2','30 questions','Q&R courtes — Réponses brèves'],['Partie 3','30 questions','Conversations — Dialogues à 2-3 personnes'],['Partie 4','30 questions','Monologues — Annonces, messages'],['Partie 5','40 questions','Grammaire — Compléter une phrase'],['Partie 6','16 questions','Textes à trous — Compléter un texte'],['Partie 7','44 questions','Lecture — Comprendre des documents']].map(function(r){return '<tr><td><strong>'+r[0]+'</strong></td><td>'+r[1]+'</td><td>'+r[2]+'</td></tr>';}).join('');
-    html+='<h2>Niveaux TOEIC</h2><p>945-990: C1/C2 | 785-940: B2 | 550-780: B1 | 225-545: A2 | 10-220: A1</p><h2>Conseils</h2><ul><li>Entraînez-vous à l\'écoute avec des podcasts anglais</li><li>Lisez des articles en anglais chaque jour</li><li>Maîtrisez le vocabulaire professionnel</li><li>Gérez votre temps : 45 min écoute + 75 min lecture</li></ul>';
-    html='<h1>📊 Préparation TOEIC</h1><table><thead><tr><th>Partie</th><th>Questions</th><th>Type</th></tr></thead><tbody>'+html+'</tbody></table>';
-  } else {
-    html='<h1>📥 Fiche mémo — English Master</h1><p>Utilisez Ctrl+P pour imprimer ou enregistrer en PDF.</p>';
-  }
-  var win=window.open('','_blank');
-  if(!win||win===window){alert('Veuillez autoriser les popups pour cette fonction.');return;}
-  win.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>English Master — Fiche</title><style>'+css+'</'+'style></head><body>'+html+'<hr style="margin-top:30px"><p style="font-size:11px;color:#999">Généré par English Master A1→C2 — '+new Date().toLocaleDateString('fr-FR')+'</p></body></html>');
-  win.document.close();
-}
-
-// ============================================================
 // PAGE: IELTS
 // ============================================================
 var IELTS_Q=[
@@ -6620,25 +6509,6 @@ function finishToefl(score,total){
 }
 
 // ============================================================
-// PAGE: ONBOARDING
-// ============================================================
-function pageOnboarding(){
-  return '<div style="text-align:center;padding:40px 20px">'
-    +'<div style="font-size:4rem;margin-bottom:12px">🇬🇧</div>'
-    +'<h1 style="font-size:1.8rem;margin-bottom:8px">Bienvenue sur English Master !</h1>'
-    +'<p style="color:var(--text2);margin-bottom:28px;font-size:14.5px;max-width:440px;margin-left:auto;margin-right:auto">Votre application complète pour apprendre l\'anglais de A1 à C2, à votre rythme, depuis tous vos appareils.</p>'
-    +'<div class="grid-3" style="max-width:600px;margin:0 auto 28px">'
-    +'<div class="wcard"><div class="wi">🎯</div><div class="wt">Test de niveau</div><div class="wd">Trouvez votre niveau</div></div>'
-    +'<div class="wcard"><div class="wi">📚</div><div class="wt">52 modules</div><div class="wd">A1 → C2</div></div>'
-    +'<div class="wcard"><div class="wi">🎮</div><div class="wt">Jeux & Tests</div><div class="wd">TOEIC, IELTS, TOEFL</div></div>'
-    +'</div>'
-    +'<div class="btn-row" style="justify-content:center;gap:12px">'
-    +'<button class="btn btn-primary" style="font-size:15px;padding:12px 28px" onclick="go(\'test-niveau\')">🎯 Faire le test de niveau →</button>'
-    +'<button class="btn btn-sec" style="font-size:14px;padding:12px 22px" onclick="go(\'a1-phon\')">📚 Commencer par A1</button>'
-    +'</div>'
-    +'</div>';
-}
-
 // ============================================================
 // PAGE: MODE TUTEUR
 // ============================================================
@@ -6687,12 +6557,6 @@ function startChallenge(){
 }
 
 // ============================================================
-// PAGE: B2 & C1 MATCH pages
-// ============================================================
-function pageB2Match(){return '<div class="phdr">'+levelTag('tgb2','B2')+'<h1>🔗 Matching B2</h1><p class="pdesc">Associez chaque expression idiomatique à sa signification.</p></div><div class="sec"><div id="match-b2"><div style="text-align:center;padding:20px;color:var(--text3)">Chargement...</div></div></div>'+doneBar('b2-match','b2-reading');}
-function pageC1Match(){return '<div class="phdr">'+levelTag('tgc1','C1')+'<h1>🔗 Matching C1</h1><p class="pdesc">Associez chaque mot académique C1 à sa définition.</p></div><div class="sec"><div id="match-c1"><div style="text-align:center;padding:20px;color:var(--text3)">Chargement...</div></div></div>'+doneBar('c1-match','c1-reading');}
-
-// ============================================================
 // TEST SURPRISE — (see improved version below)
 // ============================================================
 
@@ -6700,19 +6564,6 @@ function pageC1Match(){return '<div class="phdr">'+levelTag('tgc1','C1')+'<h1>�
 // ============================================================
 // NEW DATA: MATCH_B2, MATCH_C1, FC_C2
 // ============================================================
-
-// ============================================================
-// SRS — Spaced Repetition System
-// ============================================================
-function getSRSState(lvl){try{return JSON.parse(localStorage.getItem('srs_'+lvl)||'{}');}catch(e){return{};}}
-function saveSRSState(lvl,s){localStorage.setItem('srs_'+lvl,JSON.stringify(s));}
-function updateSRSCard(lvl,idx,knew){
-  var s=getSRSState(lvl);var cs=s[idx]||{interval:1,reps:0};
-  if(knew){cs.reps=(cs.reps||0)+1;var iv=[1,3,7,14,30,60];cs.interval=iv[Math.min(cs.reps-1,iv.length-1)];}
-  else{cs.reps=0;cs.interval=1;}
-  var nx=new Date();nx.setDate(nx.getDate()+cs.interval);cs.next=nx.toDateString();
-  s[idx]=cs;saveSRSState(lvl,s);
-}
 
 // ============================================================
 // DAILY XP TRACKING
@@ -7225,6 +7076,17 @@ var GRAMMAR_MNEM=[
   {rule:'Verbes irréguliers en groupes',trick:'Apprenez par patterns musicaux : sing/sang/sung, ring/rang/rung, swim/swam/swum · run/ran/run · go/went/gone · buy/bought/bought, think/thought/thought, teach/taught/taught.'},
   {rule:'Articles a/an/the',trick:'THE = monde déjà connu (the sun, the president, the book I mentioned). A/AN = première mention (a dog, an idea). NOTHING = général ou abstrait (Dogs are friendly. Life is short.)'},
 ];
+function getMnemTip(explanation){
+  var lower=explanation.toLowerCase();
+  for(var i=0;i<GRAMMAR_MNEM.length;i++){
+    var rule=GRAMMAR_MNEM[i].rule.toLowerCase();
+    var keywords=rule.split(/[\s\/]+/);
+    if(keywords.some(function(kw){return kw.length>2&&lower.indexOf(kw)!==-1;})){
+      return GRAMMAR_MNEM[i].trick;
+    }
+  }
+  return '';
+}
 function pageMnemotechniques(){
   return '<div class="phdr"><h1>💡 Mnémotechniques</h1><p class="pdesc">Des astuces mémorables pour ne plus jamais confondre les règles difficiles !</p></div>'
     +GRAMMAR_MNEM.map(function(m){
@@ -7408,26 +7270,6 @@ function pageC1Match(){
 }
 
 // ============================================================
-// PAGE: ONBOARDING
-// ============================================================
-function pageOnboarding(){
-  return '<div style="text-align:center;padding:40px 20px;max-width:540px;margin:0 auto">'
-    +'<div style="font-size:4rem;margin-bottom:12px">🇬🇧</div>'
-    +'<h1 style="font-size:1.8rem;margin-bottom:8px">Bienvenue sur English Master !</h1>'
-    +'<p style="color:var(--text2);margin-bottom:28px;font-size:14.5px;line-height:1.6">Votre application complète pour apprendre l\'anglais de A1 à C2, à votre rythme, sur tous vos appareils.</p>'
-    +'<div class="grid-3" style="margin-bottom:28px">'
-    +'<div class="wcard"><div class="wi">🎯</div><div class="wt">Test de niveau</div><div class="wd">60 questions</div></div>'
-    +'<div class="wcard"><div class="wi">📚</div><div class="wt">52+ modules</div><div class="wd">A1 → C2</div></div>'
-    +'<div class="wcard"><div class="wi">🎮</div><div class="wt">Jeux & Exams</div><div class="wd">TOEIC, IELTS, TOEFL</div></div>'
-    +'</div>'
-    +'<p style="color:var(--text2);font-size:13.5px;margin-bottom:20px">Par où souhaitez-vous commencer ?</p>'
-    +'<div class="btn-row" style="justify-content:center;gap:10px;flex-wrap:wrap">'
-    +'<button class="btn btn-primary" style="font-size:14px;padding:12px 24px" onclick="go(\'test-niveau\')">🎯 Faire le test de niveau →</button>'
-    +'<button class="btn btn-sec" style="font-size:14px;padding:12px 22px" onclick="go(\'a1-phon\')">📚 Commencer en A1</button>'
-    +'<button class="btn btn-sec" style="font-size:14px;padding:12px 22px" onclick="go(\'welcome\')">🏠 Voir le tableau de bord</button>'
-    +'</div></div>';
-}
-
 // ============================================================
 // UPGRADE: pageWelcome — inject weekly chart + full quick access
 // ============================================================
@@ -8739,18 +8581,6 @@ function getObjectifMini(){
   var status=calcObjectifStatus();
   if(!status)return '<button onclick="go(\'objectif\')" style="background:none;border:none;color:var(--text3);font-size:12px;cursor:pointer;text-decoration:underline">+ Définir un objectif C2</button>';
   return '<div style="font-size:12px;color:var(--text2);margin-top:4px">🎯 Objectif C2 : '+(status.remainingDays>0?status.remainingDays+'j restants':'Objectif dépassé !')+' · <span style="color:'+status.color+';font-weight:700">'+status.icon+' '+status.status+'</span></div>';
-}
-
-
-function spellAlphabet(){
-  const names={A:'ay',B:'bee',C:'see',D:'dee',E:'ee',F:'ef',G:'jee',
-    H:'aitch',I:'eye',J:'jay',K:'kay',L:'el',M:'em',N:'en',O:'oh',
-    P:'pee',Q:'cue',R:'ar',S:'es',T:'tee',U:'you',V:'vee',
-    W:'double you',X:'ex',Y:'why',Z:'zed'};
-  const letters='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-  let i=0;
-  function next(){if(i<letters.length){speak(names[letters[i]]);i++;setTimeout(next,700);}}
-  next();
 }
 
 
