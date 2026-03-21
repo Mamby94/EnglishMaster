@@ -503,6 +503,13 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
       <div style="font-size:13px;color:var(--text2);margin-top:4px">A1 → C2 · Progression synchronisée sur tous vos appareils</div>
     </div>
 
+    <!-- Firebase error banner (hidden by default) -->
+    <div id="firebase-error-banner" style="display:none;background:#fff3f3;border:1.5px solid #e74c3c;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
+      <div style="font-size:22px;margin-bottom:6px">⚠️</div>
+      <div style="font-size:13px;font-weight:700;color:#e74c3c;margin-bottom:4px">Connexion au serveur impossible</div>
+      <div style="font-size:12px;color:#666;line-height:1.4">La clé API Firebase est invalide. Veuillez mettre à jour la clé API dans la configuration Firebase du projet.</div>
+    </div>
+
     <!-- Tab switcher -->
     <div style="display:flex;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:24px">
       <button id="tab-login" onclick="showTab('login')" style="flex:1;padding:8px;border-radius:7px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:var(--blue);color:#fff;transition:all .2s">Connexion</button>
@@ -755,6 +762,20 @@ auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 let currentUser = null;
 let userProfile = {};
 let userState   = {done:{}, xp:0, streak:0, lastDate:''};
+let firebaseOk  = true;
+
+// Check Firebase API key validity
+(function checkFirebaseKey(){
+  fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + firebaseConfig.apiKey, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if(d.error && d.error.message && d.error.message.indexOf('API key not valid')!==-1){
+      firebaseOk = false;
+      var banner = document.getElementById('firebase-error-banner');
+      if(banner) banner.style.display = 'block';
+    }
+  }).catch(function(){});
+})();
 
 // ============================================================
 // AUTH FUNCTIONS
@@ -780,7 +801,8 @@ function doLogin(){
   setMsg('login-msg','Connexion...', true);
   auth.signInWithEmailAndPassword(email, pwd)
     .catch(function(e){
-      var msg = e.code==='auth/user-not-found'||e.code==='auth/wrong-password' ? 'Email ou mot de passe incorrect.' :
+      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Service indisponible : clé API Firebase invalide.' :
+                e.code==='auth/user-not-found'||e.code==='auth/wrong-password' ? 'Email ou mot de passe incorrect.' :
                 e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
       setMsg('login-msg', msg, false);
     });
@@ -802,7 +824,8 @@ function doRegister(){
       });
     })
     .catch(function(e){
-      var msg = e.code==='auth/email-already-in-use' ? 'Cet email est déjà utilisé.' :
+      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Service indisponible : clé API Firebase invalide.' :
+                e.code==='auth/email-already-in-use' ? 'Cet email est déjà utilisé.' :
                 e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
       setMsg('reg-msg', msg, false);
     });
