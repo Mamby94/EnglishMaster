@@ -503,6 +503,13 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
       <div style="font-size:13px;color:var(--text2);margin-top:4px">A1 → C2 · Progression synchronisée sur tous vos appareils</div>
     </div>
 
+    <!-- Loading overlay while checking Firebase -->
+    <div id="firebase-checking" style="text-align:center;padding:20px 0">
+      <div style="font-size:28px;margin-bottom:10px;animation:spin 1s linear infinite;display:inline-block">⏳</div>
+      <div style="font-size:14px;font-weight:600;color:var(--text2)">Chargement...</div>
+      <style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>
+    </div>
+
     <!-- Firebase error banner (hidden by default) -->
     <div id="firebase-error-banner" style="display:none;background:#f0f7ff;border:1.5px solid #1d5cb8;border-radius:10px;padding:14px 16px;margin-bottom:18px;text-align:center">
       <div style="font-size:22px;margin-bottom:6px">📱</div>
@@ -514,14 +521,14 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
       <div id="auto-local-msg" style="font-size:11px;color:#999;line-height:1.3">Redirection automatique dans quelques secondes...</div>
     </div>
 
-    <!-- Tab switcher -->
-    <div style="display:flex;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:24px">
+    <!-- Tab switcher (hidden initially until Firebase check completes) -->
+    <div id="auth-tabs" style="display:none;background:var(--bg3);border-radius:10px;padding:4px;margin-bottom:24px">
       <button id="tab-login" onclick="showTab('login')" style="flex:1;padding:8px;border-radius:7px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:var(--blue);color:#fff;transition:all .2s">Connexion</button>
       <button id="tab-register" onclick="showTab('register')" style="flex:1;padding:8px;border-radius:7px;border:none;font-size:13px;font-weight:700;cursor:pointer;background:transparent;color:var(--text2);transition:all .2s">Créer un compte</button>
     </div>
 
-    <!-- Login form -->
-    <div id="form-login">
+    <!-- Login form (hidden initially until Firebase check completes) -->
+    <div id="form-login" style="display:none">
       <div style="margin-bottom:12px">
         <label style="font-size:12px;font-weight:700;color:var(--text2);display:block;margin-bottom:5px">EMAIL</label>
         <input type="email" id="login-email" placeholder="votre@email.com"
@@ -775,24 +782,38 @@ let firebaseOk  = true;
   if(savedLocal){
     try{ JSON.parse(savedLocal); setTimeout(startLocalMode, 100); return; }catch(e){}
   }
+  // Fallback: if check takes too long, enter local mode
+  var checkTimeout = setTimeout(function(){
+    if(!localMode && !currentUser){ firebaseOk = false; startLocalMode(); }
+  }, 4000);
   fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=' + firebaseConfig.apiKey, {
     method:'POST', headers:{'Content-Type':'application/json'}, body:'{}'
   }).then(function(r){ return r.json(); }).then(function(d){
+    clearTimeout(checkTimeout);
     if(d.error && d.error.message && d.error.message.indexOf('API key not valid')!==-1){
       firebaseOk = false;
-      var banner = document.getElementById('firebase-error-banner');
-      if(banner) banner.style.display = 'block';
-      // Auto-enter local mode after a short delay
-      setTimeout(function(){ if(!currentUser) startLocalMode(); }, 2000);
+      // Enter local mode immediately — no delay, no error banner
+      startLocalMode();
+    } else {
+      // Firebase is OK — show login forms
+      showAuthForms();
     }
   }).catch(function(){
-    // Network error — auto-enter local mode
+    clearTimeout(checkTimeout);
+    // Network error — enter local mode immediately
     firebaseOk = false;
-    var banner = document.getElementById('firebase-error-banner');
-    if(banner) banner.style.display = 'block';
-    setTimeout(function(){ if(!currentUser) startLocalMode(); }, 2000);
+    startLocalMode();
   });
 })();
+
+function showAuthForms(){
+  var checking = document.getElementById('firebase-checking');
+  if(checking) checking.style.display = 'none';
+  var tabs = document.getElementById('auth-tabs');
+  if(tabs) tabs.style.display = 'flex';
+  var formLogin = document.getElementById('form-login');
+  if(formLogin) formLogin.style.display = 'block';
+}
 
 // ============================================================
 // LOCAL MODE — works without Firebase
@@ -859,11 +880,10 @@ function doLogin(){
   setMsg('login-msg','Connexion...', true);
   auth.signInWithEmailAndPassword(email, pwd)
     .catch(function(e){
-      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Serveur indisponible. Passage en mode local...' :
-                e.code==='auth/user-not-found'||e.code==='auth/wrong-password' ? 'Email ou mot de passe incorrect.' :
+      if(e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.'){ startLocalMode(); return; }
+      var msg = e.code==='auth/user-not-found'||e.code==='auth/wrong-password' ? 'Email ou mot de passe incorrect.' :
                 e.code==='auth/invalid-email' ? 'Email invalide.' :
                 e.code==='auth/invalid-credential' ? 'Email ou mot de passe incorrect.' : 'Erreur : '+e.message;
-      if(e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.'){ setTimeout(startLocalMode,1000); }
       setMsg('login-msg', msg, false);
     });
 }
@@ -885,10 +905,9 @@ function doRegister(){
       });
     })
     .catch(function(e){
-      var msg = e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.' ? 'Serveur indisponible. Passage en mode local...' :
-                e.code==='auth/email-already-in-use' ? 'Cet email est déjà utilisé.' :
+      if(e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.'){ startLocalMode(); return; }
+      var msg = e.code==='auth/email-already-in-use' ? 'Cet email est déjà utilisé.' :
                 e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
-      if(e.code==='auth/api-key-not-valid.-please-pass-a-valid-api-key.'){ setTimeout(startLocalMode,1000); }
       setMsg('reg-msg', msg, false);
     });
 }
@@ -916,6 +935,7 @@ function doLogout(){
 // AUTH STATE OBSERVER — fires on every device automatically
 // ============================================================
 auth.onAuthStateChanged(function(user){
+  if(localMode) return; // Don't interfere with local mode
   if(user){
     currentUser = user;
     loadSettings();
