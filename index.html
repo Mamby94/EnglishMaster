@@ -487,10 +487,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
 }
 </style>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<!-- Firebase removed — using localStorage -->
 </head>
 <body>
 
@@ -500,7 +497,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
     <div style="text-align:center;margin-bottom:28px">
       <div style="font-size:2.5rem;margin-bottom:8px">🇬🇧</div>
       <div style="font-size:1.5rem;font-weight:800;color:var(--text)">English Master</div>
-      <div style="font-size:13px;color:var(--text2);margin-top:4px">A1 → C2 · Progression synchronisée sur tous vos appareils</div>
+      <div style="font-size:13px;color:var(--text2);margin-top:4px">A1 → C2 · Progression sauvegardée localement</div>
     </div>
 
     <!-- Tab switcher -->
@@ -735,26 +732,15 @@ try {
 function dl(lines){return `<div class="dlines">${lines.map(l=>`<div class="dline${l.b?' b':''}"><div class="dav">${l.b?'🧑':'👩'}</div><div class="dbub"><div class="en">${l.en} <span class="audio" onclick="speak('${l.en.replace(/'/g,"\\'")}')">🔊</span></div><div class="fr">${l.fr}</div></div></div>`).join('')}</div>`;}
 
 // ============================================================
-// FIREBASE CONFIG — English Master
+// LOCAL AUTH — localStorage-based (Firebase removed)
 // ============================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyDf9FvRly2ZndOwXc_egBEiTc2RPmWo-HI",
-  authDomain: "english-master-407fd.firebaseapp.com",
-  projectId: "english-master-407fd",
-  storageBucket: "english-master-407fd.firebasestorage.app",
-  messagingSenderId: "782947742298",
-  appId: "1:782947742298:web:3de2f2dc4bf68450461e63"
-};
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
-const db   = firebase.firestore();
-
-// Persist login across sessions (stays logged in on all devices)
-auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
-
 let currentUser = null;
 let userProfile = {};
 let userState   = {done:{}, xp:0, streak:0, lastDate:''};
+
+// Helper: get all local users
+function _getUsers(){ return JSON.parse(localStorage.getItem('em_users')||'{}'); }
+function _saveUsers(u){ localStorage.setItem('em_users', JSON.stringify(u)); }
 
 // ============================================================
 // AUTH FUNCTIONS
@@ -774,87 +760,88 @@ function setMsg(id, msg, ok){
 }
 
 function doLogin(){
-  var email = document.getElementById('login-email').value.trim();
+  var email = document.getElementById('login-email').value.trim().toLowerCase();
   var pwd   = document.getElementById('login-pwd').value;
   if(!email||!pwd){ setMsg('login-msg','Remplissez tous les champs.',false); return; }
+  var users = _getUsers();
+  if(!users[email]){ setMsg('login-msg','Email ou mot de passe incorrect.',false); return; }
+  if(users[email].pwd !== pwd){ setMsg('login-msg','Email ou mot de passe incorrect.',false); return; }
   setMsg('login-msg','Connexion...', true);
-  auth.signInWithEmailAndPassword(email, pwd)
-    .catch(function(e){
-      var msg = e.code==='auth/user-not-found'||e.code==='auth/wrong-password' ? 'Email ou mot de passe incorrect.' :
-                e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
-      setMsg('login-msg', msg, false);
-    });
+  localStorage.setItem('em_current', email);
+  _authInit();
 }
 
 function doRegister(){
   var name  = document.getElementById('reg-name').value.trim();
-  var email = document.getElementById('reg-email').value.trim();
+  var email = document.getElementById('reg-email').value.trim().toLowerCase();
   var pwd   = document.getElementById('reg-pwd').value;
   if(!name||!email||!pwd){ setMsg('reg-msg','Remplissez tous les champs.',false); return; }
   if(pwd.length<6){ setMsg('reg-msg','Mot de passe trop court (6 min).',false); return; }
+  var users = _getUsers();
+  if(users[email]){ setMsg('reg-msg','Cet email est déjà utilisé.',false); return; }
   setMsg('reg-msg','Création du compte...', true);
-  auth.createUserWithEmailAndPassword(email, pwd)
-    .then(function(cred){
-      var uid = cred.user.uid;
-      var av  = ['😊','😎','🧑‍🎓','👩‍💻','🧑‍🏫','👨‍🍳','🦊','🐻','🦁','🐼','🌟','🚀'][Math.floor(Math.random()*12)];
-      return db.collection('users').doc(uid).set({
-        name: name, av: av, xp: 0, streak: 0, lastDate: '', done: {}
-      });
-    })
-    .catch(function(e){
-      var msg = e.code==='auth/email-already-in-use' ? 'Cet email est déjà utilisé.' :
-                e.code==='auth/invalid-email' ? 'Email invalide.' : 'Erreur : '+e.message;
-      setMsg('reg-msg', msg, false);
-    });
+  var av = ['😊','😎','🧑‍🎓','👩‍💻','🧑‍🏫','👨‍🍳','🦊','🐻','🦁','🐼','🌟','🚀'][Math.floor(Math.random()*12)];
+  users[email] = { pwd: pwd, name: name, av: av, xp:0, streak:0, lastDate:'', done:{}, badges:{}, toeicBest:null, toeicHistory:[] };
+  _saveUsers(users);
+  localStorage.setItem('em_current', email);
+  _authInit();
 }
 
 function doForgot(){
-  var email = document.getElementById('login-email').value.trim();
+  var email = document.getElementById('login-email').value.trim().toLowerCase();
   if(!email){ setMsg('login-msg','Entrez votre email ci-dessus.', false); return; }
-  auth.sendPasswordResetEmail(email)
-    .then(function(){ setMsg('login-msg','Email de réinitialisation envoyé !', true); })
-    .catch(function(){ setMsg('login-msg','Email introuvable.', false); });
+  var users = _getUsers();
+  if(!users[email]){ setMsg('login-msg','Email introuvable.', false); return; }
+  setMsg('login-msg','Mode local : réinitialisez votre mot de passe ci-dessous.', false);
+  // In local mode, allow direct password reset
+  var newPwd = prompt('Entrez un nouveau mot de passe (min 6 caractères) :');
+  if(newPwd && newPwd.length>=6){ users[email].pwd=newPwd; _saveUsers(users); setMsg('login-msg','Mot de passe mis à jour !', true); }
+  else if(newPwd){ setMsg('login-msg','Mot de passe trop court (6 min).', false); }
 }
 
 function doLogout(){
-  auth.signOut();
+  localStorage.removeItem('em_current');
+  currentUser = null;
+  document.getElementById('app').style.display          = 'none';
+  document.getElementById('auth-screen').style.display  = 'flex';
 }
 
 // ============================================================
-// AUTH STATE OBSERVER — fires on every device automatically
+// AUTH INIT — replaces onAuthStateChanged
 // ============================================================
-auth.onAuthStateChanged(function(user){
-  if(user){
-    currentUser = user;
-    loadSettings();
-    db.collection('users').doc(user.uid).get().then(function(doc){
-      if(doc.exists){
-        var d = doc.data();
-        userProfile = {name: d.name||'Utilisateur', av: d.av||'😊'};
-        userState   = {done: d.done||{}, xp: d.xp||0, streak: d.streak||0, lastDate: d.lastDate||'', badges: d.badges||{}, toeicBest: d.toeicBest||null, toeicHistory: d.toeicHistory||[]};
-      } else {
-        userProfile = {name: user.displayName||user.email.split('@')[0], av:'😊'};
-        userState   = {done:{}, xp:0, streak:0, lastDate:'', badges:{}, toeicBest:null, toeicHistory:[]};
-      }
+function _authInit(){
+  var email = localStorage.getItem('em_current');
+  if(email){
+    var users = _getUsers();
+    var u = users[email];
+    if(u){
+      currentUser = { uid: email, email: email };
+      userProfile = { name: u.name||'Utilisateur', av: u.av||'😊' };
+      userState   = { done: u.done||{}, xp: u.xp||0, streak: u.streak||0, lastDate: u.lastDate||'', badges: u.badges||{}, toeicBest: u.toeicBest||null, toeicHistory: u.toeicHistory||[] };
       document.getElementById('pav').textContent   = userProfile.av;
       document.getElementById('pname').textContent = userProfile.name;
-      // Show email in settings if on that page
-      const emailEl=document.getElementById('set-email');
-      if(emailEl)emailEl.textContent=user.email;
+      var emailEl=document.getElementById('set-email');
+      if(emailEl) emailEl.textContent = email;
       document.getElementById('auth-screen').style.display = 'none';
       document.getElementById('app').style.display          = 'flex';
+      loadSettings();
       checkStreak();
       updateStats();
       var isNew=(Object.keys(userState.done||{}).length===0&&!(userState.xp));
       if(isNew){go('onboarding');}else{go('welcome');}
       checkSurpriseTest();
-    });
+    } else {
+      localStorage.removeItem('em_current');
+      document.getElementById('app').style.display          = 'none';
+      document.getElementById('auth-screen').style.display  = 'flex';
+    }
   } else {
-    currentUser = null;
     document.getElementById('app').style.display          = 'none';
     document.getElementById('auth-screen').style.display  = 'flex';
   }
-});
+}
+// Fire on page load
+document.addEventListener('DOMContentLoaded', function(){ _authInit(); });
 
 // ============================================================
 // STATE — read/write to Firestore
@@ -863,13 +850,17 @@ function getState(){ return userState; }
 function setState(s){
   userState = s;
   if(currentUser){
-    var update={done:s.done,xp:s.xp,streak:s.streak,lastDate:s.lastDate};
-    if(s.badges)update.badges=s.badges;
-    if(s.toeicBest)update.toeicBest=s.toeicBest;
-    if(s.toeicHistory)update.toeicHistory=s.toeicHistory;
-    if(s.testNiveau)update.testNiveau=s.testNiveau;
-    if(s.chronoBest)update.chronoBest=s.chronoBest;
-    db.collection('users').doc(currentUser.uid).update(update).catch(function(){});
+    var email = currentUser.email;
+    var users = _getUsers();
+    if(users[email]){
+      users[email].done=s.done; users[email].xp=s.xp; users[email].streak=s.streak; users[email].lastDate=s.lastDate;
+      if(s.badges) users[email].badges=s.badges;
+      if(s.toeicBest) users[email].toeicBest=s.toeicBest;
+      if(s.toeicHistory) users[email].toeicHistory=s.toeicHistory;
+      if(s.testNiveau) users[email].testNiveau=s.testNiveau;
+      if(s.chronoBest) users[email].chronoBest=s.chronoBest;
+      _saveUsers(users);
+    }
   }
 }
 
@@ -4655,8 +4646,7 @@ const QUIZ_C2=[
 // ============================================================
 // INIT — PROFILE SYSTEM
 // ============================================================
-// Firebase handles auth state — no manual init needed
-// onAuthStateChanged above fires automatically on page load
+// Auth is handled by _authInit() on DOMContentLoaded
 
 // PWA — Register Service Worker
 if('serviceWorker' in navigator){
@@ -8518,37 +8508,37 @@ function publishScore(){
     ieltsBest:s.ieltsBest||0,
     updatedAt:new Date().toISOString(),
   };
-  db.collection('leaderboard').doc(currentUser.uid).set(entry).then(function(){
-    showToast('✅ Score publié sur le classement !');
-    setTimeout(function(){loadLeaderboard();},1000);
-  }).catch(function(){showToast('Erreur lors de la publication');});
+  var lb=JSON.parse(localStorage.getItem('em_leaderboard')||'{}');
+  lb[currentUser.uid]=entry;
+  localStorage.setItem('em_leaderboard',JSON.stringify(lb));
+  showToast('✅ Score publié sur le classement !');
+  setTimeout(function(){loadLeaderboard();},500);
 }
 
 function loadLeaderboard(){
   var el=document.getElementById('lb-list');
   if(!el)return;
-  // Try ordered query, fall back to unordered if index missing
-  var query=db.collection('leaderboard').orderBy('xp','desc').limit(20);
-  query.get().then(function(snap){
-    if(!el)return;
-    if(snap.empty){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3)">Aucun score publié pour l\'instant. Soyez le premier !</div>';return;}
-    var myUid=currentUser?currentUser.uid:null;
-    var rows=[];
-    var rank=1;
-    snap.forEach(function(doc){
-      var d=doc.data();
-      var isMe=doc.id===myUid;
-      rows.push('<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:'+(isMe?'var(--a2bg)':'var(--bg3)')+';border-radius:var(--radius);margin-bottom:6px;border:1.5px solid '+(isMe?'var(--a2)':'var(--border)')+';">'
-        +'<span style="font-size:1rem;font-weight:800;color:var(--text2);min-width:24px">'+(rank<=3?['🥇','🥈','🥉'][rank-1]:rank)+'</span>'
-        +'<span style="font-size:1.2rem">'+d.av+'</span>'
-        +'<div style="flex:1"><div style="font-weight:700;color:var(--text)">'+d.pseudo+(isMe?' (vous)':'')+'</div>'
-        +'<div style="font-size:12px;color:var(--text2)">'+d.modules+' modules · Streak '+d.streak+'j'+(d.toeicBest?' · TOEIC '+d.toeicBest:'')+'</div></div>'
-        +'<div style="font-size:1rem;font-weight:800;color:var(--blue)">'+d.xp+' XP</div>'
-        +'</div>');
-      rank++;
-    });
-    el.innerHTML=rows.join('');
-  }).catch(function(){if(el)el.innerHTML='<div class="infobox">Classement disponible dès que des utilisateurs publient leur score.</div>';});
+  var lb=JSON.parse(localStorage.getItem('em_leaderboard')||'{}');
+  var entries=Object.keys(lb).map(function(id){return {id:id, data:lb[id]};});
+  entries.sort(function(a,b){return (b.data.xp||0)-(a.data.xp||0);});
+  entries=entries.slice(0,20);
+  if(entries.length===0){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--text3)">Aucun score publié pour l\'instant. Soyez le premier !</div>';return;}
+  var myUid=currentUser?currentUser.uid:null;
+  var rows=[];
+  var rank=1;
+  entries.forEach(function(entry){
+    var d=entry.data;
+    var isMe=entry.id===myUid;
+    rows.push('<div style="display:flex;align-items:center;gap:12px;padding:10px 14px;background:'+(isMe?'var(--a2bg)':'var(--bg3)')+';border-radius:var(--radius);margin-bottom:6px;border:1.5px solid '+(isMe?'var(--a2)':'var(--border)')+';">'
+      +'<span style="font-size:1rem;font-weight:800;color:var(--text2);min-width:24px">'+(rank<=3?['🥇','🥈','🥉'][rank-1]:rank)+'</span>'
+      +'<span style="font-size:1.2rem">'+d.av+'</span>'
+      +'<div style="flex:1"><div style="font-weight:700;color:var(--text)">'+d.pseudo+(isMe?' (vous)':'')+'</div>'
+      +'<div style="font-size:12px;color:var(--text2)">'+d.modules+' modules · Streak '+d.streak+'j'+(d.toeicBest?' · TOEIC '+d.toeicBest:'')+'</div></div>'
+      +'<div style="font-size:1rem;font-weight:800;color:var(--blue)">'+d.xp+' XP</div>'
+      +'</div>');
+    rank++;
+  });
+  el.innerHTML=rows.join('');
 }
 
 function createChallenge(){
@@ -8557,15 +8547,11 @@ function createChallenge(){
   // Generate a challenge code and seed
   var seed=Math.floor(Math.random()*9000)+1000;
   var code='DEFI-'+lvl.toUpperCase()+'-'+seed;
-  // Save challenge to Firestore
+  // Save challenge to localStorage
   var pseudo=localStorage.getItem('em_pseudo')||userProfile.name||'Anonyme';
-  if(currentUser){
-    db.collection('challenges').doc(code).set({
-      level:lvl,seed:seed,code:code,
-      creator:pseudo,createdAt:new Date().toISOString(),
-      scores:{}
-    }).catch(function(){});
-  }
+  var challenges=JSON.parse(localStorage.getItem('em_challenges')||'{}');
+  challenges[code]={level:lvl,seed:seed,code:code,creator:pseudo,createdAt:new Date().toISOString(),scores:{}};
+  localStorage.setItem('em_challenges',JSON.stringify(challenges));
   // Store locally too
   localStorage.setItem('em_pending_challenge',JSON.stringify({code,lvl,seed}));
   var el=document.getElementById('challenge-result');
@@ -8586,16 +8572,15 @@ function joinChallenge(){
   var match=code.match(/^DEFI-([A-Z0-9]+)-(\d+)$/);
   if(!match){showToast('❌ Code invalide. Format : DEFI-B1-1234');return;}
   var lvl=match[1].toLowerCase();var seed=parseInt(match[2]);
-  // Load from Firestore if exists
-  db.collection('challenges').doc(code).get().then(function(doc){
-    if(doc.exists){
-      var data=doc.data();
-      showToast('✅ Défi trouvé ! Créé par '+data.creator);
-      setTimeout(function(){startChallengeFromCode(data.level,data.seed,code);},1000);
-    } else {
-      startChallengeFromCode(lvl,seed,code);
-    }
-  }).catch(function(){startChallengeFromCode(lvl,seed,code);});
+  // Load from localStorage if exists
+  var challenges=JSON.parse(localStorage.getItem('em_challenges')||'{}');
+  if(challenges[code]){
+    var data=challenges[code];
+    showToast('✅ Défi trouvé ! Créé par '+data.creator);
+    setTimeout(function(){startChallengeFromCode(data.level,data.seed,code);},1000);
+  } else {
+    startChallengeFromCode(lvl,seed,code);
+  }
 }
 
 function startChallengeFromCode(lvl,seed,code){
@@ -8610,8 +8595,8 @@ function startChallengeFromCode(lvl,seed,code){
       // Save score
       if(currentUser&&code){
         var pseudo=localStorage.getItem('em_pseudo')||userProfile.name||'Anonyme';
-        var upd={};upd['scores.'+pseudo]=score;
-        db.collection('challenges').doc(code).update(upd).catch(function(){});
+        var challenges=JSON.parse(localStorage.getItem('em_challenges')||'{}');
+        if(challenges[code]){challenges[code].scores=challenges[code].scores||{};challenges[code].scores[pseudo]=score;localStorage.setItem('em_challenges',JSON.stringify(challenges));}
       }
       document.getElementById('content').innerHTML='<div class="phdr"><h1>⚔️ Défi terminé !</h1></div>'
         +'<div class="sec" style="text-align:center">'
