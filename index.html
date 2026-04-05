@@ -485,11 +485,7 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
 :root{--sidebar-w:280px}
 #content{padding:36px 32px 80px}
 }
-
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+</style>
 </head>
 <body>
 
@@ -720,6 +716,10 @@ body.dark .dash-stat{background:rgba(0,0,0,.25)}
 </main>
 </div>
 <div id="toast"></div>
+<!-- Firebase SDK (loaded here to avoid render-blocking blank page) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 <script>
 // Fix: si dernière page était sheets, rediriger vers welcome
 try {
@@ -737,12 +737,12 @@ function dl(lines){return `<div class="dlines">${lines.map(l=>`<div class="dline
 // FIREBASE CONFIG — English Master
 // ============================================================
 const firebaseConfig = {
-  apiKey: "AIzaSyDf9FvRly2ZndOwXc_egBEiTc2RPmWo-HI",
-  authDomain: "english-master-407fd.firebaseapp.com",
-  projectId: "english-master-407fd",
-  storageBucket: "english-master-407fd.firebasestorage.app",
-  messagingSenderId: "782947742298",
-  appId: "1:782947742298:web:3de2f2dc4bf68450461e63"
+  apiKey: "AIzaSyBltaRiNd46-tQJsPJMMclfPZ4J1_6tXm0",
+  authDomain: "english-master-v2.firebaseapp.com",
+  projectId: "english-master-v2",
+  storageBucket: "english-master-v2.firebasestorage.app",
+  messagingSenderId: "469255954672",
+  appId: "1:469255954672:web:b229c44d2d1def68e7e235"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
